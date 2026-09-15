@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 2,
+  "strategy": "balanced",
+  "models": {
+    "orchestrator": null,
+    "reviewer": null,
+    "codeWorker": null,
+    "fileWorker": null,
+    "searchWorker": null,
+    "alternateWorker": null
+  },
+  "workerPools": {
+    "codeWorker": [],
+    "fileWorker": [],
+    "searchWorker": [],
+    "alternateWorker": []
+  },
+  "modelProfiles": {},
+  "maxParallelWorkers": 6,
+  "providerConcurrency": {},
+  "maxAttemptsPerTask": 2,
+  "maxRepairRounds": 2,
+  "review": {
+    "enabled": true,
+    "mediumLevel": 1,
+    "criticalLevel": 2
+  },
+  "budget": {
+    "maxCostUsd": 0,
+    "maxTokens": 0,
+    "maxRunMinutes": 0,
+    "softRatio": 0.8
+  },
+  "verification": {
+    "autoDetect": true,
+    "finalFullSuite": true,
+    "checks": []
+  }
+}

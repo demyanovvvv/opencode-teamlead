@@ -1,0 +1,298 @@
+# OpenCode TeamLead v2.0.0
+
+**Production Adaptive Development Accelerator for OpenCode 1.x.**
+
+TeamLead optimizes one outcome: **the fastest verified correct change at the lowest practical total model cost**. It does not try to maximize agent count. It chooses the minimum orchestration depth needed for the task.
+
+## Compatibility
+
+- Compatibility baseline: **OpenCode >= 1.18.30 and < 2.0.0**.
+- The runtime is designed for future `1.x.x` releases through public OpenCode APIs and capability detection, not exact-version branching.
+- Built around the OpenCode 1.x plugin contract (`PluginInput.client`, hooks, custom tools, agents and `.opencode/commands`).
+- No dependency on custom plugin TUI routes. Core UX works through supported slash commands and typed tools.
+- `/lead-doctor` reports the detected OpenCode version and required runtime capabilities.
+
+Official references used by this implementation:
+- https://opencode.ai/docs/plugins/
+- https://opencode.ai/docs/commands/
+- https://opencode.ai/docs/agents/
+- https://opencode.ai/docs/permissions/
+
+## What changed from TeamLead v1.x
+
+v2 is a rewrite of the runtime, not another layer on the old monolith.
+
+### Adaptive execution depth
+
+TeamLead automatically chooses:
+
+- **Direct** — one bounded worker + minimal affected verification.
+- **Managed** — one worker + targeted verification + conditional review.
+- **Team** — Lead-planned DAG + safe parallel workers + final verification + review/repair.
+
+Small tasks therefore do not pay for an unnecessary planner, reviewer or swarm.
+
+### Model-agnostic routing
+
+Any connected OpenCode model may be assigned to any role. TeamLead never infers quality from names such as GPT, Claude, Fable, MiniMax, GLM or DeepSeek.
+
+Routing uses:
+
+- hard eligibility: provider/model availability, tool-call support, context capacity;
+- user model pools;
+- project-local first-pass/repair/failure evidence;
+- expected cost of successful work;
+- provider circuit state;
+- selected policy: `fast`, `balanced`, `economy`, `quality`.
+
+Hard eligibility is never silently relaxed.
+
+### Safety model
+
+Mutating child workers:
+
+- cannot use `bash`/shell;
+- cannot spawn `task` subagents;
+- cannot access external directories;
+- are runtime-bound to their assigned `WRITE SCOPE`;
+- fail closed if a mutating tool's target path cannot be identified;
+- reject lexical path traversal and symlink escapes;
+- edit an isolated Git worktree rather than the primary checkout.
+
+Only the trusted TeamLead runtime runs verification programs, using structured `{ executable, args[] }` definitions and `spawn(..., { shell: false })`. Model output cannot become a raw host shell command.
+
+### Transactional Git integration
+
+For mutating tasks:
+
+1. Create isolated worktree.
+2. Overlay the current dirty/untracked project state into an ephemeral baseline.
+3. Run the worker there.
+4. Collect the worker-only binary patch.
+5. Validate changed files against `WRITE SCOPE`.
+6. Run targeted deterministic checks.
+7. Acquire cross-process integration lock.
+8. Run `git apply --check`.
+9. Apply patch to primary checkout.
+
+A failed verification or integration check leaves the primary checkout unchanged by that worker attempt.
+
+### Scheduler
+
+Team mode uses:
+
+- DAG validation and cycle detection;
+- critical-path prioritization;
+- adaptive parallel cap;
+- write-scope conflict serialization;
+- provider-specific concurrency limits;
+- budget admission before a wave;
+- bounded retries with another eligible model.
+
+`maxParallelWorkers` is a ceiling, not a target.
+
+### Targeted verification
+
+TeamLead safely auto-detects common project checks:
+
+- Node: `typecheck`, `check`, `lint`, `test`, `build` scripts;
+- Rust: `cargo test --workspace --all-targets`;
+- Go: `go test ./...`;
+- Python: `python -m pytest`.
+
+Custom trusted checks can be configured structurally in `.opencode/teamlead.json`; arbitrary model-generated command strings are not part of the tool schema.
+
+### Conditional review
+
+Reviewer depth is risk-based:
+
+- Level 0 — low-risk, small, strongly verified change: no LLM reviewer.
+- Level 1 — normal managed/team review.
+- Level 2 — security/auth/database/concurrency/architecture/public-contract work.
+
+Reviewer verdict is submitted through the typed `teamlead_submit_review` tool instead of prose parsing.
+
+## Installation
+
+### Linux / macOS
+
+```bash
+./install.sh /path/to/project
+```
+
+### Windows PowerShell
+
+```powershell
+.\install.ps1 -Project C:\path\to\project
+```
+
+TeamLead v2.0.0 is intentionally **project-local**: install it into each repository where you want the isolated worktree/runtime guarantees. Restart OpenCode after installation/update.
+
+The installer:
+
+- installs one auto-loaded plugin entrypoint: `.opencode/plugins/teamlead.ts`;
+- installs internal modules under `.opencode/teamlead/`;
+- installs TeamLead agents and slash commands;
+- preserves an existing `.opencode/teamlead.json`;
+- removes the legacy `.opencode/plugins/teamlead/` folder used by pre-v2 builds;
+- leaves unrelated OpenCode files untouched.
+
+The v2 loader safely migrates useful v1.x settings in memory. Legacy raw `gateCommands` are deliberately ignored and never promoted to trusted commands.
+
+## First run
+
+```text
+/lead-doctor
+/lead-models
+/lead-settings
+```
+
+Then:
+
+```text
+/lead Fix the refresh-token bug and add the appropriate regression test
+```
+
+For a large change:
+
+```text
+/lead-plan Redesign the authentication flow across API, frontend and tests
+```
+
+Review the preview, then run `/lead ...`.
+
+## Commands
+
+| Command | Purpose |
+|---|---|
+| `/lead <goal>` | Execute with adaptive Direct / Managed / Team mode |
+| `/lead-plan <goal>` | Preview execution depth and tasks; no edits |
+| `/lead-status [runID]` | Recent run status, cost, models and results |
+| `/lead-models` | Connected OpenCode models, role assignments and worker pools |
+| `/lead-settings [request]` | Visual/interactive settings through OpenCode's built-in `question` UI when available; typed-tool fallback otherwise |
+| `/lead-resume [runID]` | Continue unfinished implementation tasks |
+| `/lead-doctor` | Compatibility and safety diagnostics |
+
+## Model configuration
+
+By default every role inherits/uses eligible connected models. No brand is hard-coded.
+
+Example project config:
+
+```json
+{
+  "schemaVersion": 2,
+  "strategy": "balanced",
+  "models": {
+    "orchestrator": null,
+    "reviewer": null,
+    "codeWorker": null,
+    "fileWorker": null,
+    "searchWorker": null,
+    "alternateWorker": null
+  },
+  "workerPools": {
+    "codeWorker": [],
+    "fileWorker": [],
+    "searchWorker": [],
+    "alternateWorker": []
+  },
+  "maxParallelWorkers": 6,
+  "providerConcurrency": {},
+  "review": {
+    "enabled": true,
+    "mediumLevel": 1,
+    "criticalLevel": 2
+  },
+  "budget": {
+    "maxCostUsd": 0,
+    "maxTokens": 0,
+    "maxRunMinutes": 0,
+    "softRatio": 0.8
+  }
+}
+```
+
+`0` budget limits mean unlimited. These are estimate-based admission controls, not provider billing limits. `softRatio` suppresses optional medium-level review after the threshold; critical review is never skipped. See `docs/BUDGETING.md`.
+
+Use `/lead-models` to get exact connected model IDs, then for example:
+
+```text
+/lead-settings assign provider/model-name to codeWorker
+```
+
+or configure a worker pool through the settings flow.
+
+## Trusted verification checks
+
+A project may define a trusted check directly in `teamlead.json`:
+
+```json
+{
+  "verification": {
+    "autoDetect": true,
+    "finalFullSuite": true,
+    "checks": [
+      {
+        "id": "auth-tests",
+        "executable": "npm",
+        "args": ["test", "--", "auth"],
+        "paths": ["src/auth/**", "tests/auth/**"],
+        "timeoutMs": 600000
+      }
+    ]
+  }
+}
+```
+
+There is intentionally no `command: "..."` field.
+
+## Tests included in this bundle
+
+The repository includes deterministic tests for:
+
+- Direct / Managed / Team admission;
+- profiler scope inference;
+- hard router context constraints;
+- provider circuit exclusion;
+- critical-path scheduling;
+- safe-wave write conflict serialization;
+- strategy-dependent parallelism;
+- WRITE SCOPE enforcement;
+- path traversal;
+- symlink escape;
+- shell denial;
+- fail-closed unknown mutation target;
+- v1.x configuration migration and raw-command dropping;
+- targeted verification selection;
+- real temporary Git worktree baseline + patch integration;
+- full runtime worker → worktree → patch → verification → integration → structured review flow;
+- failing trusted verification leaves the primary checkout unchanged;
+- strong Direct verification skips an unnecessary LLM Reviewer;
+- typed Lead DAG handoff in Team mode;
+- installer upgrade preservation and SDK-range normalization;
+- explicit disconnected-provider handling and rejection of unbounded WRITE SCOPE;
+- `apply_patch` Add/Update/Move/Delete marker extraction with WRITE SCOPE enforcement;
+- actual provider-request concurrency enforcement, including retry/failover;
+- structural state validation and concurrent state updates;
+- persisted verified-patch recovery without duplicate worker execution.
+
+Run the full local release verification with:
+
+```bash
+npm ci
+npm run verify
+```
+
+`npm run typecheck` uses the bundled compatibility fixture for the public OpenCode 1.18.30 plugin surface; `npm test` runs deterministic unit/integration tests, including real temporary Git repositories/worktrees. A real OpenCode installation remains the authoritative host E2E environment.
+
+## Known limitations in v2.0.0
+
+- OpenCode 1.18.30's stable `PluginModule` does not expose a general custom plugin TUI module, so v2 core settings use commands/tools instead of the previous fictional custom dashboard API.
+- Provider health in the stable 1.18.30 hook surface is based mainly on session errors rather than request-level HTTP latency telemetry. TeamLead must not invent unavailable hooks.
+- `/lead-resume` recovers persisted verified patches across integration crashes, but TeamLead is not a general event-sourced exactly-once engine for every model-prompt micro-step.
+- Cost and token figures are routing estimates. TeamLead does not claim provider-billing accuracy.
+- Full E2E against a running OpenCode binary cannot be executed in the build environment used to create this archive; run `/lead-doctor` and a representative `/lead-plan`/`/lead` smoke test on the target machine.
+- v2.0.0 supports project-local installation only; a future global-install mode would need a separate global/project configuration-resolution contract.
+
+See `docs/ARCHITECTURE.md`, `docs/THREAT_MODEL.md`, `docs/COMPATIBILITY.md`, `docs/MIGRATION.md`, `docs/BUDGETING.md`, and `docs/STATE_AND_RECOVERY.md` for details. Contributor setup and local skills are documented in `CONTRIBUTING.md` and `docs/SKILLS.md`.

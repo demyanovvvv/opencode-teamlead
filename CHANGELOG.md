@@ -1,0 +1,68 @@
+# Changelog
+
+## Unreleased
+
+### Reliability
+- Added structural persisted-state validation and locked cross-process read-modify-write updates.
+- Added verified-patch persistence, SHA-256 validation, and forward/reverse recovery on resume.
+- Added owner-token integration locks with conservative stale-owner detection.
+- Normalized Windows roots and disabled Git EOL conversion for deterministic internal patches.
+
+### Budgeting
+- Planner attempts now reserve estimated tokens and cost before prompting.
+- Documented budgeting as estimate-based and removed the nonfunctional `actualCostUsd` state field.
+- `softRatio` now suppresses optional medium-level review while preserving critical review.
+
+### Development
+- Added project-specific contributor skills, contributor documentation, Node lockfile, Windows/Linux CI, and automated manifest generation/validation.
+
+## 2.0.0
+
+### Runtime rewrite
+- Rebuilt against the real OpenCode 1.x server plugin/tool/hook model.
+- Added OpenCode 1.x compatibility layer with 1.18.30 baseline and `<2` future-family range.
+- Removed dependency on fictional/non-portable custom plugin TUI modules.
+
+### Speed / cost
+- Added Direct, Managed and Team adaptive execution depth.
+- Added critical-path scheduler and strategy-dependent parallel width.
+- Added provider-specific concurrency and cost admission.
+- Conditional LLM review: low-risk strongly verified Direct tasks can finish without Reviewer.
+- Project-local model evidence optimizes expected successful-task cost rather than cheapest first call.
+
+### Safety / correctness
+- Removed worker shell/task permissions.
+- Added runtime WRITE SCOPE enforcement, fail-closed unknown mutation targets, path traversal and symlink escape protection.
+- Model output can no longer provide raw verification shell commands.
+- Trusted verification runs `executable + args[]` with `shell:false`.
+- Hard model eligibility is never relaxed to an incompatible fallback.
+- Provider failures are separated from verification/integration failures.
+- Added cross-process Git integration lock and `git apply --check`.
+- Added cancellation forwarding to OpenCode child sessions and deterministic checks.
+
+### Git / verification
+- Isolated mutating workers in Git worktrees with dirty/untracked project baseline.
+- Binary patch collection, WRITE SCOPE validation and transactional primary-checkout integration.
+- Targeted verification and optional final full suite.
+
+### Compatibility / migration
+- Rebuilt slash commands against the supported OpenCode Markdown command surface without relying on deprecated `subtask` metadata.
+- Safe v1.x config migration maps role models/pools/budgets.
+- Legacy raw `gateCommands` are explicitly discarded.
+
+### Tests
+- Added profiler/admission, router, scheduler, security, verification, migration and real Git worktree/integration tests.
+
+### Release hardening
+- Added dynamic host-level WRITE SCOPE permissions for isolated mutating workers, plus parent-hook defense in depth.
+- Explicit empty connected-provider lists now fail closed instead of enabling every catalog provider.
+- Rejects traversal, absolute and repository-wide WRITE SCOPE declarations before dispatch.
+- Added abort forwarding to child OpenCode sessions.
+- Budget estimates are reserved before concurrent worker dispatch and include failed/retried attempts conservatively.
+- Fixed Linux/macOS installer JSON newline corruption during upgrades.
+- Expanded deterministic runtime/integration/installer coverage to 27 passing tests in the release bundle.
+- Added explicit `apply_patch` marker-path parsing so Add/Update/Move/Delete operations are checked against WRITE SCOPE before execution.
+- Provider concurrency is now enforced at actual prompt time, including retries and failover, not only during wave admission.
+- `/lead-settings` now rejects model IDs that are not currently connected in OpenCode.
+- Final full-suite verification results are persisted in run status.
+- Upgrade installers remove only known obsolete TeamLead v1 command files while preserving unrelated user commands.
