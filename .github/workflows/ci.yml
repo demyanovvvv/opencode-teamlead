@@ -20,4 +20,6 @@ jobs:
       - run: npm ci
       - run: npm run verify
       - run: npm run payload:check
+      - run: npm run security:scan
       - run: npm run manifest:check
+      - run: npm run release:bundle

@@ -15,6 +15,11 @@
 
 ### Development
 - Added project-specific contributor skills, contributor documentation, Node lockfile, Windows/Linux CI, and automated manifest generation/validation.
+- Added reproducible host/plugin smoke checks, release archive generation with checksums, and static payload security scanning.
+
+### Host compatibility
+- Plugin initialization no longer performs provider catalog I/O before OpenCode finishes loading the plugin.
+- OpenCode 1.18.31 host smoke coverage now validates installed commands, TeamLead tools, doctor, plan, and model paths through the server SDK.
 
 ## 2.0.0
 

@@ -5,7 +5,7 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
-const excluded = new Set([".git", "node_modules", ".teamlead", "MANIFEST.sha256"])
+const excluded = new Set([".git", "node_modules", ".teamlead", "dist", "MANIFEST.sha256"])
 
 async function files(directory, relative = "") {
   const result = []

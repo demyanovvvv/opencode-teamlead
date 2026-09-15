@@ -1,4 +1,5 @@
 node_modules/
+dist/
 .opencode/node_modules/
 .agents/node_modules/
 .opencode/.teamlead/

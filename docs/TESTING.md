@@ -5,6 +5,10 @@ From the TeamLead source bundle:
 ```bash
 npm ci
 npm run verify
+npm run payload:check
+npm run security:scan
+npm run manifest:check
+npm run release:bundle
 ```
 
 The release suite covers:
@@ -34,6 +38,10 @@ The release suite covers:
 - PowerShell installation into a Windows path containing spaces;
 - payload boundary check excluding contributor skills and documentation.
 
-`npm run typecheck` compiles the plugin against the bundled public-API compatibility fixture. The mock client tests orchestration glue, not the complete OpenCode binary. Run `npm run payload:check` to ensure contributor-only files cannot enter the installable payload. A release should additionally run `/lead-doctor` and a representative `/lead-plan`/`/lead` smoke test inside the target OpenCode 1.x installation; if headless invocation hangs, inspect host/provider configuration before qualifying the release.
+`npm run typecheck` compiles the plugin against the bundled public-API compatibility fixture. The mock client tests orchestration glue, not the complete OpenCode binary. Run `npm run payload:check` to ensure contributor-only files cannot enter the installable payload. `npm run security:scan` checks the payload and installers for forbidden dynamic or shell execution patterns. `npm run e2e:host`, `npm run e2e:host:plan`, and `npm run e2e:host -- --command lead-models` qualify the installed payload through the real OpenCode server SDK without relying on an agent response. A real mutating `/lead` run remains a target-machine qualification step because it requires a configured provider and model.
 
 The PowerShell installer is included for Windows. The automated test runs when `pwsh.exe` is available on Windows; validation with Windows PowerShell 5.1 remains a target-machine release qualification step when that host is supported.
+
+## Host E2E workflow
+
+The manual `.github/workflows/host-e2e.yml` workflow installs a selected OpenCode 1.x version and runs the same doctor, plan, and model smoke commands on a clean Ubuntu runner. Provider credentials are not required for these host/plugin checks. A release qualification that includes `/lead` must use a separate trusted test repository with provider credentials supplied through the target OpenCode configuration.

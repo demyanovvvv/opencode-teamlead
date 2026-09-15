@@ -28,7 +28,7 @@ TeamLead core does not depend on a custom plugin TUI module. Settings are availa
 
 ## Release validation policy
 
-For future releases, CI should test at least:
+For future releases, the manual host workflow should test at least:
 
 1. minimum supported 1.x;
 2. current stable 1.x;
@@ -37,4 +37,6 @@ For future releases, CI should test at least:
 The build bundle includes local static/mock compatibility tests, but a real OpenCode installation is the authoritative E2E environment.
 
 
-Repository CI runs the deterministic type/test/manifest gate on Linux and Windows with Node.js 22. Real OpenCode smoke tests remain a release qualification step because the mock SDK fixture cannot prove host behavior.
+Repository CI runs the deterministic type/test/payload/security/manifest/bundle gate on Linux and Windows with Node.js 22. The manual host workflow runs the real OpenCode server/plugin smoke checks against a selected 1.x version. The mock SDK fixture cannot prove host behavior, and a real mutating `/lead` run still requires provider credentials.
+
+The release environment qualified OpenCode `1.18.30` and `1.18.31` through the real server SDK. On Windows, `1.18.30` must be installed with its platform-specific optional binary package; the npm wrapper tarball alone contains a placeholder launcher and cannot be executed by itself.

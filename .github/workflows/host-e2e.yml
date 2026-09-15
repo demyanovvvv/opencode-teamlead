@@ -1,0 +1,42 @@
+name: Host E2E
+
+on:
+  workflow_dispatch:
+    inputs:
+      opencode-version:
+        description: OpenCode 1.x version to qualify
+        required: true
+        default: 1.18.31
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Validate OpenCode version
+        env:
+          OPENCODE_VERSION: ${{ inputs.opencode-version }}
+        run: |
+          if [[ ! "$OPENCODE_VERSION" =~ ^1\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Unsupported OpenCode version: $OPENCODE_VERSION"
+            exit 1
+          fi
+      - name: Install OpenCode platform binary
+        env:
+          OPENCODE_VERSION: ${{ inputs.opencode-version }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/opencode"
+          npm pack "opencode-linux-x64@$OPENCODE_VERSION" --pack-destination "$RUNNER_TEMP/opencode"
+          mkdir -p "$RUNNER_TEMP/opencode/unpacked"
+          tar -xzf "$RUNNER_TEMP/opencode/opencode-linux-x64-$OPENCODE_VERSION.tgz" -C "$RUNNER_TEMP/opencode/unpacked"
+          export PATH="$RUNNER_TEMP/opencode/unpacked/package/bin:$PATH"
+          echo "$RUNNER_TEMP/opencode/unpacked/package/bin" >> "$GITHUB_PATH"
+          opencode --version
+      - run: npm run e2e:host
+      - run: npm run e2e:host:plan
+      - run: npm run e2e:host -- --command lead-models

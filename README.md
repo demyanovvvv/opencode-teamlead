@@ -282,9 +282,13 @@ Run the full local release verification with:
 ```bash
 npm ci
 npm run verify
+npm run payload:check
+npm run security:scan
+npm run manifest:check
+npm run release:bundle
 ```
 
-`npm run typecheck` uses the bundled compatibility fixture for the public OpenCode 1.18.30 plugin surface; `npm test` runs deterministic unit/integration tests, including real temporary Git repositories/worktrees. A real OpenCode installation remains the authoritative host E2E environment.
+`npm run typecheck` uses the bundled compatibility fixture for the public OpenCode 1.18.30 plugin surface; `npm test` runs deterministic unit/integration tests, including real temporary Git repositories/worktrees. `npm run e2e:host` installs the payload into a clean temporary Git project and checks the real OpenCode server's command/tool registry plus `/lead-doctor`; `npm run e2e:host:plan` and the `lead-models` variant exercise the installed plan/model paths without requiring a model prompt. Set up provider credentials separately before qualifying a real mutating `/lead` run.
 
 ## Known limitations in v2.0.0
 
@@ -292,7 +296,7 @@ npm run verify
 - Provider health in the stable 1.18.30 hook surface is based mainly on session errors rather than request-level HTTP latency telemetry. TeamLead must not invent unavailable hooks.
 - `/lead-resume` recovers persisted verified patches across integration crashes, but TeamLead is not a general event-sourced exactly-once engine for every model-prompt micro-step.
 - Cost and token figures are routing estimates. TeamLead does not claim provider-billing accuracy.
-- Full E2E against a running OpenCode binary cannot be executed in the build environment used to create this archive; run `/lead-doctor` and a representative `/lead-plan`/`/lead` smoke test on the target machine.
+- The automated host smoke harness qualifies OpenCode server/plugin loading, `/lead-doctor`, `/lead-plan`, and `/lead-models`. A real mutating `/lead` run still depends on the target provider, model credentials, and a trusted test repository.
 - v2.0.0 supports project-local installation only; a future global-install mode would need a separate global/project configuration-resolution contract.
 
 See `docs/ARCHITECTURE.md`, `docs/THREAT_MODEL.md`, `docs/COMPATIBILITY.md`, `docs/MIGRATION.md`, `docs/BUDGETING.md`, and `docs/STATE_AND_RECOVERY.md` for details. Contributor setup and local skills are documented in `CONTRIBUTING.md` and `docs/SKILLS.md`.

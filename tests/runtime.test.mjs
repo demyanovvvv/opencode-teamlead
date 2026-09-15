@@ -24,6 +24,29 @@ async function repo() {
   return root
 }
 
+test("runtime initialization does not require a provider catalog", async () => {
+  const root = await repo()
+  let providerListCalls = 0
+  const runtime = new TeamLeadRuntime(root, {
+    provider: {
+      list: async () => {
+        providerListCalls += 1
+        throw new Error("provider unavailable")
+      },
+    },
+  }, {
+    registerPolicy() {},
+    unregisterPolicy() {},
+    takePlan() {},
+    takeReview() {},
+  })
+
+  await runtime.init()
+
+  assert.equal(providerListCalls, 0)
+  assert.deepEqual(runtime.getCatalog(), [])
+})
+
 function harness(root, { workerText = "fixed\n", planTasks, twoProviders = false, failProviderOnce } = {}) {
   let seq = 0
   let reviewerPrompts = 0

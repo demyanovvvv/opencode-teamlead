@@ -78,7 +78,6 @@ export class TeamLeadRuntime {
   async init(): Promise<void> {
     this.config = await loadConfig(this.root)
     this.state = await loadState(this.root)
-    try { this.catalog = await loadCatalog(this.client, this.root) } catch { this.catalog = [] }
   }
 
   async refresh(): Promise<void> {

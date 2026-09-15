@@ -1,9 +1,9 @@
 # TeamLead v2.0.0 release validation
 
-Release build validation completed on 2026-09-14.
+Release build validation completed on 2026-09-16.
 
 - TypeScript compatibility check: PASS.
-- Deterministic/unit/integration suite: 40/40 PASS.
+- Deterministic/unit/integration/release/security suite: 44/44 PASS.
 - Real temporary Git repository/worktree transaction test: PASS.
 - Full mock OpenCode runtime worker -> worktree -> verification -> integration -> review: PASS.
 - Provider failover: PASS.
@@ -13,7 +13,9 @@ Release build validation completed on 2026-09-14.
 - Persisted verified-patch recovery: PASS.
 - Linux and Windows CI definition: PASS.
 - Automated release manifest validation: PASS.
+- Deterministic release bundle creation and archive content validation: PASS.
 - Payload required-file, SDK-range, and runtime-state boundary validation: PASS.
+- Static payload/installer security scan: PASS.
 - WRITE SCOPE traversal / symlink / unbounded-scope rejection: PASS.
 - `apply_patch` marker path enforcement: PASS.
 - Failing trusted verification leaves primary checkout unchanged: PASS.
@@ -22,4 +24,9 @@ Release build validation completed on 2026-09-14.
 - Linux/macOS upgrade/preservation installer smoke test: PASS.
 - Static scan for `shell:true`, `child_process.exec`, `eval`, `new Function`: PASS (none found in plugin/runtime source).
 - PowerShell installer smoke test with a path containing spaces: PASS.
-- OpenCode binary `1.18.31` is installed in the validation environment, but headless command/debug invocations did not produce a result within the timeout; `/lead-doctor` plus representative `/lead-plan`/`/lead` runs remain an unresolved host smoke-test blocker.
+- Release archive installation from the generated `.tar.gz` bundle: PASS.
+- Real OpenCode `1.18.31` server host smoke: PASS; clean installed payload exposed `lead-doctor`, `lead-plan`, `lead-models`, and all TeamLead tools.
+- Real OpenCode `1.18.31` TeamLead doctor tool: PASS (`healthy: true`).
+- Real OpenCode `1.18.31` TeamLead plan/model tool paths: PASS without a model prompt.
+- Real OpenCode `1.18.30` server host smoke: PASS using the published Windows x64 platform binary; clean installed payload exposed all TeamLead tools and doctor returned `healthy: true`.
+- Real mutating `/lead` with a live provider remains a target-environment qualification step; it is not claimed by the deterministic host harness.

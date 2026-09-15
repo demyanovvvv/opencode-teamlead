@@ -8,12 +8,17 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --experimental-strip-types --test tests/*.test.mjs",
     "verify": "npm run typecheck && npm test",
+    "e2e:host": "node scripts/host-smoke.mjs",
+    "e2e:host:plan": "node scripts/host-smoke.mjs --command lead-plan",
+    "release:bundle": "node scripts/release-bundle.mjs",
+    "security:scan": "node scripts/security-scan.mjs",
     "manifest:write": "node scripts/manifest.mjs --write",
     "manifest:check": "node scripts/manifest.mjs",
     "payload:check": "node scripts/payload-boundary.mjs"
   },
   "devDependencies": {
     "@opencode-ai/plugin": "^1.18.30",
+    "@opencode-ai/sdk": "^1.18.31",
     "@types/node": "^22.0.0",
     "typescript": "^5.8.3"
   }
