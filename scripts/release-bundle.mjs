@@ -1,10 +1,10 @@
-import crypto from "node:crypto"
 import fs from "node:fs/promises"
 import { gzipSync } from "node:zlib"
 import os from "node:os"
 import path from "node:path"
 import { spawnSync } from "node:child_process"
 import { fileURLToPath } from "node:url"
+import { gitTrackedFiles, readNormalized, renderManifest, sha256 } from "./manifest-lib.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const packageJSON = JSON.parse(await fs.readFile(path.join(root, "package.json"), "utf8"))
@@ -12,9 +12,11 @@ const name = `opencode-teamlead-v${packageJSON.version}`
 const dist = path.join(root, "dist")
 const artifact = path.join(dist, `${name}.tar.gz`)
 const checksum = `${artifact}.sha256`
-function excluded(relative, name) {
-  return relative === ".git" || relative === ".opencode" || relative === ".agents" || relative === "dist" ||
-    name === "node_modules" || name === ".teamlead"
+const manifestName = "MANIFEST.sha256"
+
+function excluded(relative) {
+  const [top] = relative.split("/")
+  return top === ".git" || top === ".opencode" || top === ".agents" || top === "dist" || top === "node_modules"
 }
 
 function run(command, args, cwd = root) {
@@ -27,15 +29,14 @@ function setTarEntryMode(archive, entryName, mode) {
   while (offset + 512 <= archive.length) {
     const header = archive.subarray(offset, offset + 512)
     if (header.every((value) => value === 0)) break
-    const name = header.subarray(0, 100).toString("utf8").replace(/\0.*$/, "")
+    const entry = header.subarray(0, 100).toString("utf8").replace(/\0.*$/, "")
     const size = Number.parseInt(header.subarray(124, 136).toString("ascii").replace(/\0.*$/, "").trim() || "0", 8)
-    if (name === entryName) {
-      const modeText = `${mode.toString(8).padStart(7, "0")} `
-      Buffer.from(modeText, "ascii").copy(header, 100)
+    if (entry === entryName) {
+      Buffer.from(`${mode.toString(8).padStart(7, "0")} `, "ascii").copy(header, 100)
       header.fill(32, 148, 156)
-      let checksum = 0
-      for (const value of header) checksum += value
-      Buffer.from(`${checksum.toString(8).padStart(6, "0")}\0 `, "ascii").copy(header, 148)
+      let sum = 0
+      for (const value of header) sum += value
+      Buffer.from(`${sum.toString(8).padStart(6, "0")}\0 `, "ascii").copy(header, 148)
       return
     }
     offset += 512 + Math.ceil(size / 512) * 512
@@ -43,39 +44,44 @@ function setTarEntryMode(archive, entryName, mode) {
   throw new Error(`Release archive entry not found: ${entryName}`)
 }
 
-async function copy(source, target, relative = "") {
-  for (const entry of await fs.readdir(source, { withFileTypes: true })) {
-    const rel = relative ? `${relative}/${entry.name}` : entry.name
-    if (excluded(rel, entry.name)) continue
-    const from = path.join(source, entry.name)
-    const to = path.join(target, entry.name)
-    if (entry.isDirectory()) {
-      await fs.mkdir(to, { recursive: true })
-      await copy(from, to, rel)
-      await fs.utimes(to, 0, 0)
-    } else if (entry.isFile()) {
-      await fs.copyFile(from, to)
-      await fs.utimes(to, 0, 0)
-      if (rel === "install.sh") await fs.chmod(to, 0o755)
-    }
-  }
-}
-
 run(process.execPath, ["scripts/payload-boundary.mjs"])
-run(process.execPath, ["scripts/manifest.mjs"])
+
+// Stage the archive from the Git file set with LF-normalized content so the
+// release is reproducible across checkouts (line endings) and never ships
+// local-only files or runtime state.
+const tracked = gitTrackedFiles(root).filter((relative) => !excluded(relative) && relative !== manifestName).sort()
+const contents = new Map()
+for (const relative of tracked) contents.set(relative, await readNormalized(root, relative))
+
 await fs.mkdir(dist, { recursive: true })
 const staging = await fs.mkdtemp(path.join(os.tmpdir(), "teamlead-release-"))
 try {
   const bundleRoot = path.join(staging, name)
-  const rawTar = path.join(staging, `${name}.tar`)
   await fs.mkdir(bundleRoot)
-  await copy(root, bundleRoot)
-  await fs.utimes(bundleRoot, 0, 0)
+  const directories = new Set([bundleRoot])
+  for (const relative of tracked) {
+    const target = path.join(bundleRoot, ...relative.split("/"))
+    const parent = path.dirname(target)
+    await fs.mkdir(parent, { recursive: true })
+    for (let dir = parent; dir.startsWith(bundleRoot) && dir !== path.dirname(bundleRoot); dir = path.dirname(dir)) directories.add(dir)
+    await fs.writeFile(target, contents.get(relative))
+    await fs.utimes(target, 0, 0)
+    if (relative === "install.sh") await fs.chmod(target, 0o755)
+  }
+
+  // The in-archive manifest describes exactly the files shipped in the archive.
+  await fs.writeFile(path.join(bundleRoot, manifestName), renderManifest(tracked.map((relative) => [relative, sha256(contents.get(relative))])))
+  await fs.utimes(path.join(bundleRoot, manifestName), 0, 0)
+
+  // Normalize directory mtimes last (deepest first) so the archive is reproducible.
+  for (const dir of [...directories].sort((a, b) => b.length - a.length)) await fs.utimes(dir, 0, 0)
+
+  const rawTar = path.join(staging, `${name}.tar`)
   run("tar", ["-cf", rawTar, "--format=ustar", "-C", staging, name])
   const tar = await fs.readFile(rawTar)
   setTarEntryMode(tar, `${name}/install.sh`, 0o755)
   await fs.writeFile(artifact, gzipSync(tar, { mtime: 0 }))
-  const digest = crypto.createHash("sha256").update(await fs.readFile(artifact)).digest("hex")
+  const digest = sha256(await fs.readFile(artifact))
   await fs.writeFile(checksum, `${digest}  ${path.basename(artifact)}\n`)
   console.log(`${artifact}\n${checksum}`)
 } finally {

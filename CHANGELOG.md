@@ -16,6 +16,13 @@
 ### Development
 - Added project-specific contributor skills, contributor documentation, Node lockfile, Windows/Linux CI, and automated manifest generation/validation.
 - Added reproducible host/plugin smoke checks, release archive generation with checksums, and static payload security scanning.
+- `MANIFEST.sha256` and the release archive are now derived from the Git file set with LF-normalized content, so local-only files and runtime state can never leak and the bundle is byte-for-byte reproducible across checkouts.
+- The release archive ships a `MANIFEST.sha256` generated from its own contents, and tests validate that manifest against every shipped file.
+- Added a tag-based release workflow that verifies the tag, re-runs all gates, checks the archive checksum, and publishes the bundle and checksum.
+- CI now fails if any gate rewrites `MANIFEST.sha256`, and the host E2E workflow runs a minimum/current OpenCode version matrix on Linux and Windows.
+
+### Security
+- Cancellation and timeouts now terminate the whole subprocess tree (including grandchildren) instead of only the direct child.
 
 ### Host compatibility
 - Plugin initialization no longer performs provider catalog I/O before OpenCode finishes loading the plugin.

@@ -34,9 +34,12 @@ The release suite covers:
 - planner budget admission before the first model prompt;
 - persisted verified-patch crash recovery;
 - pre-aborted trusted subprocess cancellation;
+- full subprocess-tree termination on timeout/cancellation, including grandchildren;
+- absolute, Windows drive, and UNC path escape rejection;
 - Windows-safe path normalization and deterministic Git EOL handling.
 - PowerShell installation into a Windows path containing spaces;
-- payload boundary check excluding contributor skills and documentation.
+- payload boundary check excluding contributor skills and documentation;
+- manifest generation excluding local-only files plus byte-for-byte reproducible release bundle with an in-archive manifest validated against every shipped file.
 
 `npm run typecheck` compiles the plugin against the bundled public-API compatibility fixture. The mock client tests orchestration glue, not the complete OpenCode binary. Run `npm run payload:check` to ensure contributor-only files cannot enter the installable payload. `npm run security:scan` checks the payload and installers for forbidden dynamic or shell execution patterns. `npm run e2e:host`, `npm run e2e:host:plan`, and `npm run e2e:host -- --command lead-models` qualify the installed payload through the real OpenCode server SDK without relying on an agent response. A real mutating `/lead` run remains a target-machine qualification step because it requires a configured provider and model.
 
@@ -44,4 +47,8 @@ The PowerShell installer is included for Windows. The automated test runs when `
 
 ## Host E2E workflow
 
-The manual `.github/workflows/host-e2e.yml` workflow installs a selected OpenCode 1.x version and runs the same doctor, plan, and model smoke commands on a clean Ubuntu runner. Provider credentials are not required for these host/plugin checks. A release qualification that includes `/lead` must use a separate trusted test repository with provider credentials supplied through the target OpenCode configuration.
+The manual `.github/workflows/host-e2e.yml` workflow installs an OpenCode 1.x version and runs the same doctor, plan, and model smoke commands. It runs a version matrix (Linux `1.18.30` and `1.18.31`, Windows `1.18.31`) and accepts an optional extra version through the `opencode-version` input. Provider credentials are not required for these host/plugin checks. A release qualification that includes `/lead` must use a separate trusted test repository with provider credentials supplied through the target OpenCode configuration.
+
+## Release workflow
+
+Pushing a tag matching `v<version>` triggers `.github/workflows/release.yml`. It requires the tag to equal the `package.json` version, re-runs `npm run verify`, `payload:check`, `security:scan`, `manifest:check`, and the manifest drift guard, builds the bundle, verifies the archive checksum, and publishes the `.tar.gz` and `.sha256` to a GitHub release.

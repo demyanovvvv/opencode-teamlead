@@ -5,6 +5,7 @@ import os from "node:os"
 import path from "node:path"
 import { spawnSync } from "node:child_process"
 import { fileURLToPath } from "node:url"
+import { parseManifest, sha256, walkFiles } from "../scripts/manifest-lib.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 
@@ -14,25 +15,27 @@ function run(command, args, cwd = root) {
   return result.stdout
 }
 
-test("release manifest excludes runtime TeamLead state", async () => {
+test("manifest is current and excludes local-only files", async () => {
   const runtimeDir = path.join(root, ".opencode", ".teamlead")
   await fs.mkdir(runtimeDir, { recursive: true })
   const marker = path.join(runtimeDir, `manifest-test-${process.pid}-${Date.now()}.json`)
   try {
     await fs.writeFile(marker, JSON.stringify({ secret: "runtime-only" }))
-    const result = spawnSync(process.execPath, ["scripts/manifest.mjs", "--write"], { cwd: root, encoding: "utf8" })
-    assert.equal(result.status, 0, result.stderr || result.stdout)
+    // Check mode must pass on the committed tree; it never rewrites the manifest,
+    // so a stale manifest can never be masked by running the tests.
+    run(process.execPath, ["scripts/manifest.mjs"])
     const manifest = await fs.readFile(path.join(root, "MANIFEST.sha256"), "utf8")
-    assert.equal(manifest.includes(".opencode/.teamlead/"), false)
+    assert.equal(manifest.includes("./.opencode/.teamlead/"), false)
     assert.equal(manifest.includes(path.basename(marker)), false)
+    assert.equal(manifest.includes("./.opencode/package.json"), false)
+    assert.equal(manifest.includes("./.opencode/package-lock.json"), false)
+    assert.equal(manifest.includes("node_modules/"), false)
   } finally {
     await fs.rm(runtimeDir, { recursive: true, force: true })
-    const restore = spawnSync(process.execPath, ["scripts/manifest.mjs", "--write"], { cwd: root, encoding: "utf8" })
-    if (restore.status !== 0) throw new Error(restore.stderr || restore.stdout)
   }
 })
 
-test("release bundle contains the installable source without runtime or dependency artifacts", async () => {
+test("release bundle ships a manifest that matches the archive contents", async () => {
   const packageJSON = JSON.parse(await fs.readFile(path.join(root, "package.json"), "utf8"))
   const name = `opencode-teamlead-v${packageJSON.version}`
   const artifact = path.join(root, "dist", `${name}.tar.gz`)
@@ -59,6 +62,16 @@ test("release bundle contains the installable source without runtime or dependen
     try {
       run("tar", ["-xzf", artifact, "-C", extraction])
       const bundle = path.join(extraction, name)
+
+      // The in-archive manifest must describe exactly what the archive ships.
+      const manifest = parseManifest(await fs.readFile(path.join(bundle, "MANIFEST.sha256"), "utf8"))
+      const shipped = (await walkFiles(bundle)).filter((relative) => relative !== "MANIFEST.sha256")
+      assert.deepEqual([...manifest.keys()].sort(), shipped.sort(), "manifest paths must match archive paths")
+      for (const [relative, expected] of manifest) {
+        const actual = sha256(await fs.readFile(path.join(bundle, ...relative.split("/"))))
+        assert.equal(actual, expected, `manifest hash mismatch for ${relative}`)
+      }
+
       const project = path.join(extraction, "target project")
       await fs.mkdir(project)
       if (process.platform === "win32") {

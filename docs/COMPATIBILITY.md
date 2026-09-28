@@ -37,6 +37,8 @@ For future releases, the manual host workflow should test at least:
 The build bundle includes local static/mock compatibility tests, but a real OpenCode installation is the authoritative E2E environment.
 
 
-Repository CI runs the deterministic type/test/payload/security/manifest/bundle gate on Linux and Windows with Node.js 22. The manual host workflow runs the real OpenCode server/plugin smoke checks against a selected 1.x version. The mock SDK fixture cannot prove host behavior, and a real mutating `/lead` run still requires provider credentials.
+Repository CI runs the deterministic type/test/payload/security/manifest/bundle gate on Linux and Windows with Node.js 22 and fails if any gate rewrites the committed `MANIFEST.sha256`. The manual host workflow runs the real OpenCode server/plugin smoke checks against a version matrix (Linux `1.18.30` and `1.18.31`, Windows `1.18.31`) and accepts an optional extra version. The mock SDK fixture cannot prove host behavior, and a real mutating `/lead` run still requires provider credentials.
 
 The release environment qualified OpenCode `1.18.30` and `1.18.31` through the real server SDK. On Windows, `1.18.30` must be installed with its platform-specific optional binary package; the npm wrapper tarball alone contains a placeholder launcher and cannot be executed by itself.
+
+Tag pushes matching `v<version>` run the release workflow, which re-runs every gate, verifies the tag equals `package.json`, checks the archive checksum, and publishes the `.tar.gz` plus `.sha256` to the GitHub release.

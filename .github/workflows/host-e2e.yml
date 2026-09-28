@@ -4,13 +4,26 @@ on:
   workflow_dispatch:
     inputs:
       opencode-version:
-        description: OpenCode 1.x version to qualify
-        required: true
-        default: 1.18.31
+        description: Additional OpenCode 1.x version to qualify
+        required: false
+        default: ""
 
 jobs:
   smoke:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: opencode-linux-x64
+            version: 1.18.30
+          - os: ubuntu-latest
+            platform: opencode-linux-x64
+            version: 1.18.31
+          - os: windows-latest
+            platform: opencode-windows-x64
+            version: 1.18.31
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -20,23 +33,70 @@ jobs:
       - run: npm ci
       - name: Validate OpenCode version
         env:
-          OPENCODE_VERSION: ${{ inputs.opencode-version }}
+          OPENCODE_VERSION: ${{ matrix.version }}
+        shell: bash
         run: |
           if [[ ! "$OPENCODE_VERSION" =~ ^1\.[0-9]+\.[0-9]+$ ]]; then
             echo "Unsupported OpenCode version: $OPENCODE_VERSION"
             exit 1
           fi
+      - name: Install OpenCode platform binary (POSIX)
+        if: runner.os != 'Windows'
+        env:
+          OPENCODE_VERSION: ${{ matrix.version }}
+          OPENCODE_PLATFORM: ${{ matrix.platform }}
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/opencode"
+          npm pack "$OPENCODE_PLATFORM@$OPENCODE_VERSION" --pack-destination "$RUNNER_TEMP/opencode"
+          mkdir -p "$RUNNER_TEMP/opencode/unpacked"
+          tar -xzf "$RUNNER_TEMP/opencode/$OPENCODE_PLATFORM-$OPENCODE_VERSION.tgz" -C "$RUNNER_TEMP/opencode/unpacked"
+          echo "$RUNNER_TEMP/opencode/unpacked/package/bin" >> "$GITHUB_PATH"
+      - name: Install OpenCode platform binary (Windows)
+        if: runner.os == 'Windows'
+        env:
+          OPENCODE_VERSION: ${{ matrix.version }}
+          OPENCODE_PLATFORM: ${{ matrix.platform }}
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "$env:RUNNER_TEMP\opencode" | Out-Null
+          npm pack "$env:OPENCODE_PLATFORM@$env:OPENCODE_VERSION" --pack-destination "$env:RUNNER_TEMP\opencode"
+          New-Item -ItemType Directory -Force -Path "$env:RUNNER_TEMP\opencode\unpacked" | Out-Null
+          tar -xzf "$env:RUNNER_TEMP\opencode\$env:OPENCODE_PLATFORM-$env:OPENCODE_VERSION.tgz" -C "$env:RUNNER_TEMP\opencode\unpacked"
+          "$env:RUNNER_TEMP\opencode\unpacked\package\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+      - name: Confirm OpenCode binary
+        shell: bash
+        run: opencode --version
+      - run: npm run e2e:host
+      - run: npm run e2e:host:plan
+      - run: npm run e2e:host -- --command lead-models
+
+  smoke-extra:
+    if: ${{ inputs.opencode-version != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
       - name: Install OpenCode platform binary
         env:
           OPENCODE_VERSION: ${{ inputs.opencode-version }}
+        shell: bash
         run: |
+          if [[ ! "$OPENCODE_VERSION" =~ ^1\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Unsupported OpenCode version: $OPENCODE_VERSION"
+            exit 1
+          fi
           mkdir -p "$RUNNER_TEMP/opencode"
           npm pack "opencode-linux-x64@$OPENCODE_VERSION" --pack-destination "$RUNNER_TEMP/opencode"
           mkdir -p "$RUNNER_TEMP/opencode/unpacked"
           tar -xzf "$RUNNER_TEMP/opencode/opencode-linux-x64-$OPENCODE_VERSION.tgz" -C "$RUNNER_TEMP/opencode/unpacked"
-          export PATH="$RUNNER_TEMP/opencode/unpacked/package/bin:$PATH"
           echo "$RUNNER_TEMP/opencode/unpacked/package/bin" >> "$GITHUB_PATH"
-          opencode --version
+      - name: Confirm OpenCode binary
+        shell: bash
+        run: opencode --version
       - run: npm run e2e:host
-      - run: npm run e2e:host:plan
       - run: npm run e2e:host -- --command lead-models

@@ -12,14 +12,17 @@ Release build validation completed on 2026-09-16.
 - Planner budget admission before prompting: PASS.
 - Persisted verified-patch recovery: PASS.
 - Linux and Windows CI definition: PASS.
-- Automated release manifest validation: PASS.
-- Deterministic release bundle creation and archive content validation: PASS.
+- Automated release manifest validation: PASS (derived from the Git file set; local-only files and runtime state excluded).
+- Deterministic release bundle creation and archive content validation: PASS (byte-for-byte reproducible; in-archive manifest validated against every shipped file).
+- Release manifest drift guard in CI: PASS (gates must not rewrite `MANIFEST.sha256`).
 - Payload required-file, SDK-range, and runtime-state boundary validation: PASS.
 - Static payload/installer security scan: PASS.
 - WRITE SCOPE traversal / symlink / unbounded-scope rejection: PASS.
 - `apply_patch` marker path enforcement: PASS.
 - Failing trusted verification leaves primary checkout unchanged: PASS.
 - Pre-aborted trusted subprocesses terminate immediately without waiting for timeout: PASS.
+- Timeout/cancellation terminates the full subprocess tree, including grandchildren: PASS.
+- Absolute, Windows drive, and UNC paths cannot escape the project root: PASS.
 - Linux/macOS fresh installer smoke test: PASS.
 - Linux/macOS upgrade/preservation installer smoke test: PASS.
 - Static scan for `shell:true`, `child_process.exec`, `eval`, `new Function`: PASS (none found in plugin/runtime source).

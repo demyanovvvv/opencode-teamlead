@@ -65,6 +65,23 @@ test("symlink escape is rejected", async (t) => {
   await fs.rm(root, { recursive: true, force: true }); await fs.rm(outside, { recursive: true, force: true })
 })
 
+test("absolute and Windows drive paths cannot escape the project root", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "teamlead-abs-"))
+  await fs.mkdir(path.join(root, "src"), { recursive: true })
+  const policy = { role: "worker", root, writeScope: ["src/**"], readOnly: false }
+  try {
+    const outside = path.resolve(root, "..", "teamlead-abs-outside.txt")
+    await assert.rejects(() => guardTool(policy, "write", { path: outside, content: "x" }), /external path/i)
+    if (process.platform === "win32") {
+      await assert.rejects(() => guardTool(policy, "write", { path: "C:\\Windows\\System32\\drivers\\etc\\hosts", content: "x" }), /external path/i)
+      await assert.rejects(() => guardTool(policy, "write", { path: "\\\\server\\share\\pwn.txt", content: "x" }), /external path/i)
+    }
+    await assert.rejects(() => guardTool(policy, "apply_patch", { patchText: "*** Begin Patch\n*** Update File: src/ok.ts\n*** Move to: /etc/passwd\n*** End Patch" }), /external path/i)
+  } finally {
+    await fs.rm(root, { recursive: true, force: true })
+  }
+})
+
 test("targeted verification accepts only structured checks and path matches", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "teamlead-verify-"))
   const config = migrateConfig({ verification: { autoDetect: false, checks: [

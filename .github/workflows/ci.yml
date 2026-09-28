@@ -23,3 +23,5 @@ jobs:
       - run: npm run security:scan
       - run: npm run manifest:check
       - run: npm run release:bundle
+      # Fail if any gate rewrote the committed manifest; stale manifests must not hide behind tests.
+      - run: git diff --exit-code -- MANIFEST.sha256
