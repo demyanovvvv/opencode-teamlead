@@ -55,7 +55,7 @@ A failed attempt does not apply that attempt's patch to the primary checkout.
 
 ## Task Contract Graph
 
-Tasks may declare `provides` and `consumes` contract IDs. Provider→consumer edges are automatically added to the DAG before validation/scheduling, and trusted verification checks may target those contract IDs. v2.0.0 intentionally does not claim a persistent repository-wide contract registry or automatic replay of already-completed consumers after an undeclared external contract change.
+Tasks may declare `provides` and `consumes` contract IDs. Provider→consumer edges are automatically added to the DAG before validation/scheduling, and trusted verification checks may target those contract IDs. v2.1.0 does not claim a persistent repository-wide contract registry or automatic replay of already-completed consumers after an undeclared external contract change.
 
 ## Verification
 

@@ -53,7 +53,7 @@ test("release bundle ships a manifest that matches the archive contents", async 
     const listing = run("tar", ["-tvzf", artifact]).split(/\r?\n/).find((entry) => entry.includes(`${name}/install.sh`))
     assert.match(listing ?? "", /^-rwxr-xr-x\s/)
     const digest = (await fs.readFile(checksum, "utf8")).trim()
-    assert.match(digest, /^[a-f0-9]{64}  opencode-teamlead-v2\.0\.0\.tar\.gz$/)
+    assert.equal(digest, `${sha256(await fs.readFile(artifact))}  ${name}.tar.gz`)
     const firstHash = digest.split(/\s+/)[0]
     run(process.execPath, ["scripts/release-bundle.mjs"])
     const secondHash = (await fs.readFile(checksum, "utf8")).trim().split(/\s+/)[0]

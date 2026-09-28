@@ -78,5 +78,5 @@ if (Test-Path $Package) {
   Copy-Item -Force (Join-Path $Src "package.json") $Package
 }
 
-Write-Host "Installed OpenCode TeamLead v2.0.0 ($InstallScope) into: $Dst"
+Write-Host "Installed OpenCode TeamLead v2.1.0 ($InstallScope) into: $Dst"
 Write-Host "Restart OpenCode, then run: /lead-doctor"

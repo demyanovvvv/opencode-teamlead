@@ -50,4 +50,4 @@ jobs:
             "dist/opencode-teamlead-v$VERSION.tar.gz" \
             "dist/opencode-teamlead-v$VERSION.tar.gz.sha256" \
             --title "$TAG" \
-            --generate-notes
+            --notes-file RELEASE_NOTES.md

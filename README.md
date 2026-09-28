@@ -1,6 +1,8 @@
-# OpenCode TeamLead v2.0.0
+# OpenCode TeamLead v2.1.0
 
 **Production Adaptive Development Accelerator for OpenCode 1.x.**
+
+[Русский README](README_RU.md) · [Installation guide in Russian](INSTALL_RU.md) · [Release notes](RELEASE_NOTES.md)
 
 TeamLead optimizes one outcome: **the fastest verified correct change at the lowest practical total model cost**. It does not try to maximize agent count. It chooses the minimum orchestration depth needed for the task.
 
@@ -9,7 +11,7 @@ TeamLead optimizes one outcome: **the fastest verified correct change at the low
 - Compatibility baseline: **OpenCode >= 1.18.30 and < 2.0.0**.
 - The runtime is designed for future `1.x.x` releases through public OpenCode APIs and capability detection, not exact-version branching.
 - Built around the OpenCode 1.x plugin contract (`PluginInput.client`, hooks, custom tools, agents and `.opencode/commands`).
-- No dependency on custom plugin TUI routes. Core UX works through supported slash commands and typed tools.
+- Includes an optional native TUI plugin with a live TeamLead indicator and Ctrl+P command menu.
 - `/lead-doctor` reports the detected OpenCode version and required runtime capabilities.
 
 Official references used by this implementation:
@@ -114,16 +116,26 @@ Reviewer verdict is submitted through the typed `teamlead_submit_review` tool in
 
 ## Installation
 
+Русская инструкция: [INSTALL_RU.md](INSTALL_RU.md).
+
 ### Linux / macOS
 
 ```bash
 ./install.sh /path/to/project
+# explicit local install
+./install.sh --scope local --project /path/to/project
+# global install for the current user
+./install.sh --scope global
 ```
 
 ### Windows PowerShell
 
 ```powershell
 .\install.ps1 -Project C:\path\to\project
+# explicit local install
+.\install.ps1 -InstallScope Local -Project C:\path\to\project
+# global install for the current user
+.\install.ps1 -InstallScope Global
 ```
 
 The installer supports **project-local** and **global** installation. In both modes runtime state and `teamlead.json` remain project-local, so projects keep independent settings, history, Git worktrees, and budgets. Restart OpenCode after installation/update.
@@ -135,10 +147,12 @@ The installer:
 - installs TeamLead agents and slash commands;
 - preserves an existing `.opencode/teamlead.json`;
 - removes the legacy `.opencode/plugins/teamlead/` folder used by pre-v2 builds;
-- leaves unrelated OpenCode files untouched.
-- registers the TUI indicator and Ctrl+P TeamLead menu through `tui.json`;
+- leaves unrelated OpenCode files untouched;
+- registers the TUI indicator and Ctrl+P TeamLead menu through `tui.json` or `tui.jsonc`.
 
 For global installation, use `--scope global` (or `-InstallScope Global` on PowerShell). Global code, commands, agents, and TUI are installed into the current user's OpenCode configuration directory. Use `OPENCODE_CONFIG_DIR` to override that directory.
+
+After installation, restart OpenCode. The TUI indicator appears beside the prompt, and Ctrl+P contains a TeamLead category with status, history, planning, execution, resume, model, settings, and diagnostics actions. If TUI plugins are unavailable in the host, the server plugin and slash commands remain usable.
 
 The v2 loader safely migrates useful v1.x settings in memory. Legacy raw `gateCommands` are deliberately ignored and never promoted to trusted commands.
 
@@ -175,6 +189,8 @@ Review the preview, then run `/lead ...`.
 | `/lead-settings [request]` | Visual/interactive settings through OpenCode's built-in `question` UI when available; typed-tool fallback otherwise |
 | `/lead-resume [runID]` | Continue unfinished implementation tasks |
 | `/lead-doctor` | Compatibility and safety diagnostics |
+
+The same actions are also available from the **TeamLead** section of the OpenCode Ctrl+P command palette when the TUI plugin is enabled.
 
 ## Model configuration
 
@@ -293,9 +309,9 @@ npm run release:bundle
 
 `npm run typecheck` uses the bundled compatibility fixture for the public OpenCode 1.18.30 plugin surface; `npm test` runs deterministic unit/integration tests, including real temporary Git repositories/worktrees. `npm run e2e:host` installs the payload into a clean temporary Git project and checks the real OpenCode server's command/tool registry plus `/lead-doctor`; `npm run e2e:host:plan` and the `lead-models` variant exercise the installed plan/model paths without requiring a model prompt. Set up provider credentials separately before qualifying a real mutating `/lead` run.
 
-## Known limitations in v2.0.0
+## Known limitations in v2.1.0
 
-- OpenCode 1.18.30's stable `PluginModule` does not expose a general custom plugin TUI module, so v2 core settings use commands/tools instead of the previous fictional custom dashboard API.
+- The TeamLead TUI requires an OpenCode host with TUI plugin support; the server tools and slash commands remain available on hosts without it.
 - Provider health in the stable 1.18.30 hook surface is based mainly on session errors rather than request-level HTTP latency telemetry. TeamLead must not invent unavailable hooks.
 - `/lead-resume` recovers persisted verified patches across integration crashes, but TeamLead is not a general event-sourced exactly-once engine for every model-prompt micro-step.
 - Cost and token figures are routing estimates. TeamLead does not claim provider-billing accuracy.

@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.1.0 — 2026-09-28
 
 ### Reliability
 - Added structural persisted-state validation and locked cross-process read-modify-write updates.
@@ -23,6 +23,20 @@
 
 ### Security
 - Cancellation and timeouts now terminate the whole subprocess tree (including grandchildren) instead of only the direct child.
+
+### TUI and workflow
+- Added a native OpenCode TUI plugin with a live TeamLead prompt indicator.
+- Added a TeamLead section to the Ctrl+P command palette with status, history, planning, execution, resume, models, settings, and diagnostics actions.
+- Added a safe, patch-free presentation snapshot for progress and recovery-aware stale-run display.
+
+### Installation
+- Added interactive and explicit local/global installation modes to both installers.
+- Global installation now installs shared code, commands, agents, and TUI integration without creating shared TeamLead settings or runtime state.
+- Added idempotent `tui.json` / `tui.jsonc` registration that preserves existing JSONC comments and unrelated plugins.
+
+### Documentation and release
+- Added English/Russian cross-links and documented TUI, Ctrl+P, and installation scope behavior.
+- Release artifacts now use version `2.1.0`.
 
 ### Host compatibility
 - Plugin initialization no longer performs provider catalog I/O before OpenCode finishes loading the plugin.

@@ -1,6 +1,6 @@
-# TeamLead v2.0.0 release validation
+# TeamLead v2.1.0 release validation
 
-Release build validation completed on 2026-09-16.
+Release build validation completed on 2026-09-28.
 
 - TypeScript compatibility check: PASS.
 - Deterministic/unit/integration/release/security suite: 44/44 PASS.
@@ -27,6 +27,9 @@ Release build validation completed on 2026-09-16.
 - Linux/macOS upgrade/preservation installer smoke test: PASS.
 - Static scan for `shell:true`, `child_process.exec`, `eval`, `new Function`: PASS (none found in plugin/runtime source).
 - PowerShell installer smoke test with a path containing spaces: PASS.
+- Local/global installer scope selection and global per-project state isolation: PASS.
+- Idempotent `tui.json` / `tui.jsonc` registration with unrelated plugin/comment preservation: PASS.
+- TUI presentation snapshot excludes patches and provider logs: PASS.
 - Release archive installation from the generated `.tar.gz` bundle: PASS.
 - Real OpenCode `1.18.31` server host smoke: PASS; clean installed payload exposed `lead-doctor`, `lead-plan`, `lead-models`, and all TeamLead tools.
 - Real OpenCode `1.18.31` TeamLead doctor tool: PASS (`healthy: true`).
