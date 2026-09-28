@@ -21,10 +21,11 @@ Optional capabilities are used only when present. A missing security-critical re
 - custom plugin tools;
 - project agents under `.opencode/agents/`;
 - custom commands under `.opencode/commands/`;
+- optional TUI plugins configured through `tui.json`;
 - agent permissions;
 - OpenCode SDK client passed to a plugin.
 
-TeamLead core does not depend on a custom plugin TUI module. Settings are available through `/lead-settings`; when the built-in `question` tool exists in the active 1.x session, the command asks the host agent to use it for an interactive menu and otherwise falls back to text.
+The server plugin remains compatible with the stable 1.x server surface. OpenCode 1.18.31+ also loads the optional TeamLead TUI module from `tui.json`; it provides the prompt indicator and Ctrl+P menu. If TUI plugin loading is unavailable, server tools and slash commands remain usable.
 
 ## Release validation policy
 

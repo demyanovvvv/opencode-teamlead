@@ -160,6 +160,7 @@ export interface RunState {
   goal: string
   mode: ExecutionMode
   status: "planned" | "running" | "review" | "repair" | "repair_required" | "completed" | "failed" | "cancelled"
+  phase?: "verification"
   parentSessionID?: string
   createdAt: number
   updatedAt: number

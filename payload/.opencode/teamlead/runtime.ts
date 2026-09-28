@@ -1,6 +1,7 @@
 import crypto from "node:crypto"
 import path from "node:path"
 import { loadConfig } from "./config.ts"
+import { savePresentation } from "./presentation.ts"
 import { chooseExecutionMode, profileTask } from "./profiler.ts"
 import { addContractEdges, nextWave, validateDag } from "./scheduler.ts"
 import { loadCatalog, routeModel } from "./router.ts"
@@ -95,6 +96,7 @@ export class TeamLeadRuntime {
       if (run) upsertRun(state, structuredClone(run))
     })
     if (event) await appendEvent(this.root, event)
+    if (run) await savePresentation(this.root, Object.values(this.state.runs), run.id).catch(() => {})
   }
 
   private async persistProviderSuccess(providerID: string): Promise<void> {
@@ -247,11 +249,13 @@ export class TeamLeadRuntime {
       attempted.add(decision.model.id); this.reserveBudget(task, decision.estimatedCostUsd, run)
       const sid = await this.createSession(this.root, `TeamLead ${task.id}`, parentSessionID)
       tstate.sessionID = sid; tstate.model = decision.model.id; tstate.provider = decision.model.providerID; tstate.status = "running"
+      await this.persist(run, { type: "task.started", runID: run.id, taskID: task.id })
       this.callbacks.registerPolicy(sid, { role: "worker", root: this.root, writeScope: [], readOnly: true })
       const started = Date.now()
       try {
         await this.promptSession(sid, this.root, roleAgent(task.worker), decision.model, taskPrompt(task), abort)
         tstate.status = "completed"
+        await this.persist(run, { type: "task.completed", runID: run.id, taskID: task.id })
         await this.persistOutcome(decision.model.id, decision.model.providerID, "pass", Date.now() - started, "success")
         return
       } catch (error) {
@@ -286,6 +290,7 @@ export class TeamLeadRuntime {
       try {
         sid = await this.createSession(txn.root, `TeamLead ${task.id}`, parentSessionID)
         tstate.sessionID = sid; tstate.model = decision.model.id; tstate.provider = decision.model.providerID; tstate.status = "running"
+        await this.persist(run, { type: "task.started", runID: run.id, taskID: task.id })
         // Defense in depth: host-level dynamic agent permissions plus the parent plugin guard when this session is visible to the same plugin instance.
         this.callbacks.registerPolicy(sid, { role: "worker", root: txn.root, writeScope: task.writeScope, readOnly: false })
         await this.promptSession(sid, txn.root, agent.id, decision.model, taskPrompt(task), abort)
@@ -436,6 +441,7 @@ export class TeamLeadRuntime {
       }
     }
     await this.persist(run, { type: "run.started", runID: run.id, mode: run.mode })
+    const heartbeat = setInterval(() => { void savePresentation(this.root, Object.values(this.state.runs), run.id).catch(() => {}) }, 2000)
     try {
       if (!tasks.length) {
         if (input.tasks?.length) tasks = addContractEdges(input.tasks.map(profileTask))
@@ -446,7 +452,9 @@ export class TeamLeadRuntime {
         await this.persist(run, { type: "run.planned", runID: run.id, taskCount: tasks.length })
       }
       await this.executeDag(run, tasks, input.parentSessionID, input.abort)
-      await this.finalVerification(run, input.abort)
+       run.phase = "verification"; await this.persist(run)
+       await this.finalVerification(run, input.abort)
+       run.phase = undefined
       run.status = "review"; await this.persist(run)
       let review = await this.review(run, input.parentSessionID, input.abort)
       while (review?.verdict === "repair" && run.repairRound < this.config.maxRepairRounds) {
@@ -455,7 +463,9 @@ export class TeamLeadRuntime {
         for (const task of repairs) run.tasks[task.id] = { task, status: "pending", attempts: 0, changedFiles: [], verification: [] }
         run.status = "repair"; await this.persist(run, { type: "run.repair", runID: run.id, round: run.repairRound })
         await this.executeDag(run, repairs, input.parentSessionID, input.abort)
-        await this.finalVerification(run, input.abort)
+         run.phase = "verification"; await this.persist(run)
+         await this.finalVerification(run, input.abort)
+         run.phase = undefined
         review = await this.review(run, input.parentSessionID, input.abort)
       }
       if (review?.verdict === "repair") { run.status = "repair_required"; run.error = "Reviewer still requests repair after configured repair rounds" }
@@ -467,6 +477,6 @@ export class TeamLeadRuntime {
       run.status = input.abort?.aborted ? "cancelled" : "failed"; run.error = safeError(error); run.completedAt = Date.now()
       await this.persist(run, { type: "run.failed", runID: run.id, error: run.error })
       return run
-    }
+    } finally { clearInterval(heartbeat) }
   }
 }

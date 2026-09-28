@@ -1,6 +1,6 @@
 # OpenCode TeamLead v2.0.0 — установка
 
-TeamLead v2 устанавливается **в конкретный проект** и рассчитан на OpenCode `>= 1.18.30` и `< 2.0.0`.
+TeamLead v2 поддерживает локальную и глобальную установку и рассчитан на OpenCode `>= 1.18.30` и `< 2.0.0`.
 
 ## Windows
 
@@ -10,6 +10,8 @@ TeamLead v2 устанавливается **в конкретный проек�
 
 ```powershell
 .\install.ps1 -Project C:\путь\к\вашему\проекту
+# глобально для текущего пользователя
+.\install.ps1 -InstallScope Global
 ```
 
 4. Перезапустите OpenCode в этом проекте.
@@ -28,6 +30,8 @@ TeamLead v2 устанавливается **в конкретный проек�
 ```bash
 chmod +x ./install.sh
 ./install.sh /path/to/project
+# глобально для текущего пользователя
+./install.sh --scope global
 ```
 
 После установки перезапустите OpenCode и выполните:
@@ -37,6 +41,8 @@ chmod +x ./install.sh
 /lead-models
 /lead-settings
 ```
+
+При глобальной установке код, команды, агенты, индикатор и меню Ctrl+P доступны во всех проектах. Файлы `.opencode/teamlead.json` и `.opencode/.teamlead/` всегда остаются локальными для каждого проекта.
 
 ## Первый запуск
 

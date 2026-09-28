@@ -2,9 +2,31 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT="${1:-$PWD}"
+SCOPE=""
+PROJECT=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --scope) SCOPE="${2:-}"; shift 2 ;;
+    --project) PROJECT="${2:-}"; shift 2 ;;
+    -h|--help) echo "Usage: ./install.sh [PROJECT] | --scope local --project PROJECT | --scope global"; exit 0 ;;
+    -*) echo "Unknown option: $1" >&2; exit 2 ;;
+    *) [[ -z "$PROJECT" ]] || { echo "Project specified twice" >&2; exit 2; }; PROJECT="$1"; shift ;;
+  esac
+done
+if [[ -z "$SCOPE" ]]; then
+  if [[ -n "$PROJECT" ]]; then SCOPE="local"
+  elif [[ -t 0 ]]; then
+    printf 'Куда установить TeamLead?\n1) Локально в проект\n2) Глобально для пользователя\nВыбор [1]: '
+    read -r choice
+    [[ "$choice" == "2" ]] && SCOPE="global" || SCOPE="local"
+  else echo "Specify --scope local|global" >&2; exit 2; fi
+fi
+[[ "$SCOPE" == "local" || "$SCOPE" == "global" ]] || { echo "--scope must be local or global" >&2; exit 2; }
+if [[ "$SCOPE" == "local" ]]; then PROJECT="${PROJECT:-$PWD}"; else PROJECT="${PROJECT:-$PWD}"; fi
 SRC="$ROOT/payload/.opencode"
-DST="$PROJECT/.opencode"
+if [[ "$SCOPE" == "global" ]]; then
+  if [[ -n "${OPENCODE_CONFIG_DIR:-}" ]]; then DST="$OPENCODE_CONFIG_DIR"; elif [[ -n "${XDG_CONFIG_HOME:-}" ]]; then DST="$XDG_CONFIG_HOME/opencode"; else DST="$HOME/.config/opencode"; fi
+else DST="$PROJECT/.opencode"; fi
 
 if [[ ! -d "$PROJECT" ]]; then
   echo "Project directory does not exist: $PROJECT" >&2
@@ -32,12 +54,14 @@ cp -R "$SRC/teamlead" "$DST/teamlead"
 cp "$SRC"/agents/teamlead-*.md "$DST/agents/"
 cp "$SRC"/commands/lead*.md "$DST/commands/"
 
-if [[ ! -f "$DST/teamlead.json" ]]; then
+if [[ "$SCOPE" == "local" && ! -f "$DST/teamlead.json" ]]; then
   cp "$SRC/teamlead.json" "$DST/teamlead.json"
   echo "Created .opencode/teamlead.json"
 else
   echo "Preserved existing .opencode/teamlead.json (v2 migrates compatible v1 settings at runtime)."
 fi
+
+node "$ROOT/scripts/merge-tui.mjs" "$DST"
 
 merge_package_js='const fs=require("fs"); const f=process.argv[1]; let x={}; try{x=JSON.parse(fs.readFileSync(f,"utf8"))}catch{}; x.private=x.private!==false; x.dependencies=x.dependencies||{}; x.dependencies["@opencode-ai/plugin"]=">=1.18.30 <2.0.0"; fs.writeFileSync(f, JSON.stringify(x,null,2)+"\n");'
 if [[ ! -f "$DST/package.json" ]]; then
@@ -51,5 +75,5 @@ else
   echo '         Ensure it contains dependency "@opencode-ai/plugin": ">=1.18.30 <2.0.0" before restart.' >&2
 fi
 
-echo "Installed OpenCode TeamLead v2.0.0 into: $PROJECT"
+echo "Installed OpenCode TeamLead v2.0.0 ($SCOPE) into: $DST"
 echo "Restart OpenCode, then run: /lead-doctor"

@@ -30,6 +30,7 @@ test("manifest is current and excludes local-only files", async () => {
     assert.equal(manifest.includes("./.opencode/package.json"), false)
     assert.equal(manifest.includes("./.opencode/package-lock.json"), false)
     assert.equal(manifest.includes("node_modules/"), false)
+    assert.equal(manifest.includes("./payload/.opencode/teamlead/tui.tsx"), true)
   } finally {
     await fs.rm(runtimeDir, { recursive: true, force: true })
   }

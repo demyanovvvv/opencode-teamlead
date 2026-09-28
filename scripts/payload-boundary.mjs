@@ -24,6 +24,7 @@ assert.equal(files.some((file) => file.includes("CONTRIBUTING.md") || file.inclu
 assert.equal(files.some((file) => file.startsWith(".teamlead/") || file.includes("/.teamlead/")), false, "Runtime state must not be installed into payload")
 for (const required of [
   "plugins/teamlead.ts",
+  "teamlead/tui.tsx",
   "teamlead/config.ts",
   "teamlead/git.ts",
   "teamlead/process.ts",

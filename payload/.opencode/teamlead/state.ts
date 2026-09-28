@@ -61,6 +61,7 @@ function validRun(value: unknown, key: string): value is RunState {
   if (!["planned", "running", "review", "repair", "repair_required", "completed", "failed", "cancelled"].includes(String(value.status))) return false
   if (!finiteNonNegative(value.createdAt) || !finiteNonNegative(value.updatedAt)) return false
   if (![0, 1, 2].includes(value.reviewLevel as number) || !Number.isInteger(value.repairRound) || (value.repairRound as number) < 0) return false
+  if (value.phase !== undefined && value.phase !== "verification") return false
   if (!finiteNonNegative(value.estimatedTokens) || !finiteNonNegative(value.estimatedCostUsd)) return false
   return record(value.tasks) && Object.entries(value.tasks).every(([taskID, task]) => validRunTask(task, taskID)) &&
     Array.isArray(value.finalVerification) && value.finalVerification.every(validVerification) && validIntegration(value.integration) &&

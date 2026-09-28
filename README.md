@@ -126,7 +126,7 @@ Reviewer verdict is submitted through the typed `teamlead_submit_review` tool in
 .\install.ps1 -Project C:\path\to\project
 ```
 
-TeamLead v2.0.0 is intentionally **project-local**: install it into each repository where you want the isolated worktree/runtime guarantees. Restart OpenCode after installation/update.
+The installer supports **project-local** and **global** installation. In both modes runtime state and `teamlead.json` remain project-local, so projects keep independent settings, history, Git worktrees, and budgets. Restart OpenCode after installation/update.
 
 The installer:
 
@@ -136,6 +136,9 @@ The installer:
 - preserves an existing `.opencode/teamlead.json`;
 - removes the legacy `.opencode/plugins/teamlead/` folder used by pre-v2 builds;
 - leaves unrelated OpenCode files untouched.
+- registers the TUI indicator and Ctrl+P TeamLead menu through `tui.json`;
+
+For global installation, use `--scope global` (or `-InstallScope Global` on PowerShell). Global code, commands, agents, and TUI are installed into the current user's OpenCode configuration directory. Use `OPENCODE_CONFIG_DIR` to override that directory.
 
 The v2 loader safely migrates useful v1.x settings in memory. Legacy raw `gateCommands` are deliberately ignored and never promoted to trusted commands.
 
@@ -297,6 +300,6 @@ npm run release:bundle
 - `/lead-resume` recovers persisted verified patches across integration crashes, but TeamLead is not a general event-sourced exactly-once engine for every model-prompt micro-step.
 - Cost and token figures are routing estimates. TeamLead does not claim provider-billing accuracy.
 - The automated host smoke harness qualifies OpenCode server/plugin loading, `/lead-doctor`, `/lead-plan`, and `/lead-models`. A real mutating `/lead` run still depends on the target provider, model credentials, and a trusted test repository.
-- v2.0.0 supports project-local installation only; a future global-install mode would need a separate global/project configuration-resolution contract.
+- global installation shares code and UI only; TeamLead settings and state remain project-local by design.
 
 See `docs/ARCHITECTURE.md`, `docs/THREAT_MODEL.md`, `docs/COMPATIBILITY.md`, `docs/MIGRATION.md`, `docs/BUDGETING.md`, and `docs/STATE_AND_RECOVERY.md` for details. Contributor setup and local skills are documented in `CONTRIBUTING.md` and `docs/SKILLS.md`.
