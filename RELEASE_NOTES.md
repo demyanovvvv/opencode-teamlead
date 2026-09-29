@@ -1,6 +1,6 @@
-# OpenCode TeamLead v2.1.1
+# OpenCode TeamLead v2.1.2
 
-TeamLead v2.1.1 adds bilingual English/Russian UI and installer support on top of the native OpenCode TUI integration and project-local or user-global installation. Execution settings and run history stay isolated per project in either installation mode.
+TeamLead v2.1.2 refreshes the bilingual English/Russian documentation and release metadata while retaining the localized UI and installer support. Execution settings and run history stay isolated per project in either installation mode.
 
 ## Highlights
 
@@ -10,10 +10,11 @@ TeamLead v2.1.1 adds bilingual English/Russian UI and installer support on top o
 - **Safe updates:** TUI registration is idempotent and preserves unrelated plugins and comments in existing `tui.jsonc` files.
 - **Runtime reliability:** persisted-state validation, cross-process state locks, verified-patch recovery, stricter budget admission, and subprocess-tree cancellation are included in this release.
 - **Bilingual experience:** choose English or Russian interactively, or select the language explicitly in the shell installer; existing project settings are preserved during updates.
+- **Updated documentation:** English and Russian README files, installation guidance, and release metadata are aligned with the current patch release.
 
 ## Installation
 
-Download `opencode-teamlead-v2.1.1.tar.gz` and verify it using the accompanying `.sha256` file. Extract the archive and run one of the following commands from its root:
+Download `opencode-teamlead-v2.1.2.tar.gz` and verify it using the accompanying `.sha256` file. Extract the archive and run one of the following commands from its root:
 
 ```bash
 ./install.sh --scope local --project /path/to/project
@@ -28,4 +29,4 @@ Download `opencode-teamlead-v2.1.1.tar.gz` and verify it using the accompanying 
 
 Restart OpenCode, then use **Ctrl+P → TeamLead** or run `/lead-doctor`. The supported host family is OpenCode `>=1.18.30 <2.0.0`; TUI integration depends on the host's TUI plugin support.
 
-Documentation: [English README](https://github.com/demyanovvvv/opencode-teamlead/blob/v2.1.1/README.md) · [Russian README](https://github.com/demyanovvvv/opencode-teamlead/blob/v2.1.1/README_RU.md) · [Russian installation guide](https://github.com/demyanovvvv/opencode-teamlead/blob/v2.1.1/INSTALL_RU.md) · [Changelog](https://github.com/demyanovvvv/opencode-teamlead/blob/v2.1.1/CHANGELOG.md).
+Documentation: [English README](https://github.com/demyanovvvv/opencode-teamlead/blob/v2.1.2/README.md) · [Russian README](https://github.com/demyanovvvv/opencode-teamlead/blob/v2.1.2/README_RU.md) · [Russian installation guide](https://github.com/demyanovvvv/opencode-teamlead/blob/v2.1.2/INSTALL_RU.md) · [Changelog](https://github.com/demyanovvvv/opencode-teamlead/blob/v2.1.2/CHANGELOG.md).

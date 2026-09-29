@@ -1,4 +1,4 @@
-# OpenCode TeamLead v2.1.1
+# OpenCode TeamLead v2.1.2
 
 **Production Adaptive Development Accelerator for OpenCode 1.x.**
 
@@ -6,7 +6,7 @@
 
 TeamLead optimizes one outcome: **the fastest verified correct change at the lowest practical total model cost**. It does not try to maximize agent count. It chooses the minimum orchestration depth needed for the task.
 
-Version 2.1.1 adds bilingual TeamLead UI and installer prompts. Choose English or Russian during an interactive install, or pass `--language en|ru` / `-Language en|ru`; existing project settings remain preserved during updates.
+Version 2.1.2 includes the bilingual TeamLead UI and installer prompts. Choose English or Russian during an interactive install, or pass `--language en|ru` / `-Language en|ru`; existing project settings remain preserved during updates.
 
 ## Compatibility
 
@@ -316,7 +316,7 @@ npm run release:bundle
 
 `npm run typecheck` uses the bundled compatibility fixture for the public OpenCode 1.18.30 plugin surface; `npm test` runs deterministic unit/integration tests, including real temporary Git repositories/worktrees. `npm run e2e:host` installs the payload into a clean temporary Git project and checks the real OpenCode server's command/tool registry plus `/lead-doctor`; `npm run e2e:host:plan` and the `lead-models` variant exercise the installed plan/model paths without requiring a model prompt. Set up provider credentials separately before qualifying a real mutating `/lead` run.
 
-## Known limitations in v2.1.1
+## Known limitations in v2.1.2
 
 - The TeamLead TUI requires an OpenCode host with TUI plugin support; the server tools and slash commands remain available on hosts without it.
 - Provider health in the stable 1.18.30 hook surface is based mainly on session errors rather than request-level HTTP latency telemetry. TeamLead must not invent unavailable hooks.

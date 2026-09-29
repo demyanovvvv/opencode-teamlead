@@ -89,5 +89,5 @@ else
   echo '         Ensure it contains dependency "@opencode-ai/plugin": ">=1.18.30 <2.0.0" before restart.' >&2
 fi
 
-echo "Installed OpenCode TeamLead v2.1.1 ($SCOPE) into: $DST"
+echo "Installed OpenCode TeamLead v2.1.2 ($SCOPE) into: $DST"
 echo "Restart OpenCode, then run: /lead-doctor"

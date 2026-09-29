@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.1.2 — 2026-09-29
+
+### Release
+- Refreshed the bilingual English/Russian documentation and release metadata for the latest patch release.
+- Kept the localized installer behavior and project-setting preservation documented consistently across release files.
+
 ## 2.1.1 — 2026-09-29
 
 ### Localization
