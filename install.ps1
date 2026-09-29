@@ -2,18 +2,28 @@ param(
   [Parameter(Mandatory=$false)]
   [string]$Project = (Get-Location).Path,
   [ValidateSet("Local", "Global")]
-  [string]$InstallScope
+  [string]$InstallScope,
+  [ValidateSet("en", "ru")]
+  [string]$Language
 )
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Src = Join-Path $Root "payload/.opencode"
+if (-not $Language) {
+  if (-not $InstallScope -and -not $PSBoundParameters.ContainsKey("Project") -and [Environment]::UserInteractive) {
+    Write-Host "Language / Язык:"
+    Write-Host "1) English"
+    Write-Host "2) Русский"
+    $Language = if ((Read-Host "Choice [1]") -eq "2") { "ru" } else { "en" }
+  } else { $Language = "en" }
+}
 if (-not $InstallScope) {
   if ($PSBoundParameters.ContainsKey("Project")) { $InstallScope = "Local" }
   elseif ([Environment]::UserInteractive) {
-    Write-Host "Куда установить TeamLead?"
-    Write-Host "1) Локально в проект"
-    Write-Host "2) Глобально для пользователя"
-    $choice = Read-Host "Выбор [1]"
+    Write-Host $(if ($Language -eq "ru") { "Куда установить TeamLead?" } else { "Where should TeamLead be installed?" })
+    Write-Host $(if ($Language -eq "ru") { "1) Локально в проект" } else { "1) Locally in this project" })
+    Write-Host $(if ($Language -eq "ru") { "2) Глобально для пользователя" } else { "2) Globally for this user" })
+    $choice = Read-Host $(if ($Language -eq "ru") { "Выбор [1]" } else { "Choice [1]" })
     $InstallScope = if ($choice -eq "2") { "Global" } else { "Local" }
   } else { throw "Укажите -InstallScope Local или Global" }
 }
@@ -46,12 +56,18 @@ Copy-Item -Force (Join-Path $Src "plugins/teamlead.ts") (Join-Path $Dst "plugins
 $TeamleadDir = Join-Path $Dst "teamlead"
 if (Test-Path $TeamleadDir) { Remove-Item -Recurse -Force $TeamleadDir }
 Copy-Item -Recurse -Force (Join-Path $Src "teamlead") $TeamleadDir
+if ($Language -eq "ru") { Set-Content -Path (Join-Path $TeamleadDir "language.json") -Value "{`n  `"language`": `"ru`"`n}`n" -Encoding UTF8 }
 Copy-Item -Force (Join-Path $Src "agents/teamlead-*.md") (Join-Path $Dst "agents")
 Copy-Item -Force (Join-Path $Src "commands/lead*.md") (Join-Path $Dst "commands")
 
 $Config = Join-Path $Dst "teamlead.json"
 if ($InstallScope -eq "Local" -and -not (Test-Path $Config)) {
   Copy-Item -Force (Join-Path $Src "teamlead.json") $Config
+  if ($Language -eq "ru") {
+    $settings = Get-Content $Config -Raw | ConvertFrom-Json
+    $settings.language = "ru"
+    $settings | ConvertTo-Json -Depth 20 | Set-Content -Encoding UTF8 $Config
+  }
   Write-Host "Created .opencode/teamlead.json"
 } else {
   Write-Host "Preserved existing .opencode/teamlead.json (v2 migrates compatible v1 settings at runtime)."

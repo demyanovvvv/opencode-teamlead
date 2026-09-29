@@ -20,13 +20,16 @@ test("summary counts tasks without exposing persisted patches or provider logs",
   assert.equal(summary.active, 1)
   assert.equal(summary.total, 3)
   assert.equal(JSON.stringify(summary).includes("secret"), false)
-  assert.equal(formatIndicator(summary), "◐ TeamLead · Team · 1/3 задач · 1 worker")
+  assert.equal(formatIndicator(summary), "◐ TL 1/3 · team")
+  assert.equal(formatIndicator(summary, true), "◐ TL 1/3")
+  assert.equal(formatIndicator(summary, false, "ru"), "◐ TL 1/3 · команда")
 })
 
 test("selection prefers current session, and stale running records are not live", () => {
   const runs = [run({ id: "other", parentSessionID: "session_b", updatedAt: 9 }), run()]
   assert.equal(selectRun(runs, "session_a")?.id, "run_one")
-  assert.equal(formatIndicator(summarizeRun(runs[1], false)).includes("прерван"), true)
+  assert.equal(formatIndicator(summarizeRun(runs[1], false)), "! TL Interrupted")
+  assert.equal(formatIndicator(summarizeRun(runs[1], false), false, "ru"), "! TL Прерван")
 })
 
 test("presentation persists several session runs without patch contents", async () => {

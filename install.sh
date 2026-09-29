@@ -4,19 +4,29 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCOPE=""
 PROJECT=""
+LANGUAGE=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --scope) SCOPE="${2:-}"; shift 2 ;;
     --project) PROJECT="${2:-}"; shift 2 ;;
-    -h|--help) echo "Usage: ./install.sh [PROJECT] | --scope local --project PROJECT | --scope global"; exit 0 ;;
+    --language) LANGUAGE="${2:-}"; shift 2 ;;
+    -h|--help) echo "Usage: ./install.sh [PROJECT] | --scope local --project PROJECT | --scope global [--language en|ru]"; exit 0 ;;
     -*) echo "Unknown option: $1" >&2; exit 2 ;;
     *) [[ -z "$PROJECT" ]] || { echo "Project specified twice" >&2; exit 2; }; PROJECT="$1"; shift ;;
   esac
 done
+[[ -z "$LANGUAGE" || "$LANGUAGE" == "en" || "$LANGUAGE" == "ru" ]] || { echo "--language must be en or ru" >&2; exit 2; }
+if [[ -z "$LANGUAGE" && -t 0 && -z "$SCOPE" && -z "$PROJECT" ]]; then
+  printf 'Language / Язык:\n1) English\n2) Русский\nChoice [1]: '
+  read -r language_choice
+  [[ "$language_choice" == "2" ]] && LANGUAGE="ru" || LANGUAGE="en"
+fi
+LANGUAGE="${LANGUAGE:-en}"
 if [[ -z "$SCOPE" ]]; then
   if [[ -n "$PROJECT" ]]; then SCOPE="local"
   elif [[ -t 0 ]]; then
-    printf 'Куда установить TeamLead?\n1) Локально в проект\n2) Глобально для пользователя\nВыбор [1]: '
+    if [[ "$LANGUAGE" == "ru" ]]; then printf 'Куда установить TeamLead?\n1) Локально в проект\n2) Глобально для пользователя\nВыбор [1]: '
+    else printf 'Where should TeamLead be installed?\n1) Locally in this project\n2) Globally for this user\nChoice [1]: '; fi
     read -r choice
     [[ "$choice" == "2" ]] && SCOPE="global" || SCOPE="local"
   else echo "Specify --scope local|global" >&2; exit 2; fi
@@ -51,11 +61,15 @@ rm -rf "$DST/plugins/teamlead"
 cp "$SRC/plugins/teamlead.ts" "$DST/plugins/teamlead.ts"
 rm -rf "$DST/teamlead"
 cp -R "$SRC/teamlead" "$DST/teamlead"
+if [[ "$LANGUAGE" == "ru" ]]; then
+  printf '{\n  "language": "ru"\n}\n' > "$DST/teamlead/language.json"
+fi
 cp "$SRC"/agents/teamlead-*.md "$DST/agents/"
 cp "$SRC"/commands/lead*.md "$DST/commands/"
 
 if [[ "$SCOPE" == "local" && ! -f "$DST/teamlead.json" ]]; then
   cp "$SRC/teamlead.json" "$DST/teamlead.json"
+  if [[ "$LANGUAGE" == "ru" ]]; then node -e 'const fs=require("fs");const f=process.argv[1];const c=JSON.parse(fs.readFileSync(f,"utf8"));c.language="ru";fs.writeFileSync(f,JSON.stringify(c,null,2)+"\n")' "$DST/teamlead.json"; fi
   echo "Created .opencode/teamlead.json"
 else
   echo "Preserved existing .opencode/teamlead.json (v2 migrates compatible v1 settings at runtime)."

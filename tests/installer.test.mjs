@@ -26,6 +26,19 @@ test("global installer keeps per-project configuration and registers TUI once", 
   } finally { await fs.rm(tmp, { recursive: true, force: true }) }
 })
 
+test("installer writes the selected Russian UI language", async () => {
+  if (process.platform === "win32") return
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "teamlead-language-"))
+  const project = path.join(tmp, "project")
+  await fs.mkdir(project, { recursive: true })
+  try {
+    const result = spawnSync("bash", [path.join(root, "install.sh"), "--scope", "local", "--project", project, "--language", "ru"], { encoding: "utf8" })
+    assert.equal(result.status, 0, result.stderr)
+    assert.equal(JSON.parse(await fs.readFile(path.join(project, ".opencode", "teamlead.json"), "utf8")).language, "ru")
+    assert.equal(JSON.parse(await fs.readFile(path.join(project, ".opencode", "teamlead", "language.json"), "utf8")).language, "ru")
+  } finally { await fs.rm(tmp, { recursive: true, force: true }) }
+})
+
 function run(script, project) {
   const r = spawnSync("bash", [script, project], { encoding: "utf8" })
   if (r.status !== 0) throw new Error(r.stderr || r.stdout)

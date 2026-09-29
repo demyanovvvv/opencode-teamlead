@@ -34,14 +34,16 @@ export function summarizeRun(run: RunState, live = true) {
   }
 }
 
-export function formatIndicator(summary?: ReturnType<typeof summarizeRun>, compact = false): string {
-  if (!summary) return "● TeamLead · Готов"
-  if (summary.interrupted) return "! TeamLead · запуск прерван"
+export function formatIndicator(summary?: ReturnType<typeof summarizeRun>, compact = false, language: "en" | "ru" = "en"): string {
+  if (!summary) return language === "ru" ? "● TL Готов" : "● TL Ready"
+  if (summary.interrupted) return language === "ru" ? "! TL Прерван" : "! TL Interrupted"
   const state = summary.status === "completed" ? "✓" : summary.status === "failed" || summary.status === "cancelled" || summary.status === "repair_required" ? "✕" : "◐"
-  const phase = ({ running: "Выполнение", review: "Ревью", repair: "Исправление", planned: "Планирование", completed: "Завершено", failed: "Ошибка", cancelled: "Отменено", repair_required: "Требуется исправление" } as Record<string, string>)[summary.status]
-  if (compact) return `${state} TeamLead · ${summary.completed}/${summary.total}`
-  if (summary.phase === "verification") return `${state} TeamLead · Проверка · ${summary.completed}/${summary.total}`
-  if (summary.status !== "running" && summary.status !== "repair") return `${state} TeamLead · ${phase}`
-  const mode = summary.mode[0].toUpperCase() + summary.mode.slice(1)
-  return `${state} TeamLead · ${mode} · ${summary.completed}/${summary.total} задач${summary.active ? ` · ${summary.active} worker${summary.active === 1 ? "" : "s"}` : ""}`
+  const phases = language === "ru"
+    ? { review: "Ревью", planned: "План", completed: "Готово", failed: "Ошибка", cancelled: "Отмена", repair_required: "Исправить" }
+    : { review: "Review", planned: "Planned", completed: "Done", failed: "Failed", cancelled: "Cancelled", repair_required: "Repair needed" }
+  if (compact) return `${state} TL ${summary.completed}/${summary.total}`
+  if (summary.phase === "verification") return `${state} TL ${summary.completed}/${summary.total} · ${language === "ru" ? "проверка" : "verify"}`
+  if (summary.status !== "running" && summary.status !== "repair") return `${state} TL ${phases[summary.status as keyof typeof phases] ?? summary.status}`
+  const mode = language === "ru" && summary.mode === "team" ? "команда" : summary.mode
+  return `${state} TL ${summary.completed}/${summary.total} · ${mode}`
 }

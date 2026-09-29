@@ -7,6 +7,7 @@ const workerRoles: WorkerRole[] = ["codeWorker", "fileWorker", "searchWorker", "
 
 export const DEFAULT_CONFIG: TeamLeadConfig = {
   schemaVersion: 2,
+  language: "en",
   strategy: "balanced",
   models: {
     orchestrator: null,
@@ -56,6 +57,7 @@ function sanitizeCheck(value: unknown): TrustedCheck | undefined {
 export function migrateConfig(raw: unknown): TeamLeadConfig {
   const x = raw && typeof raw === "object" ? raw as Record<string, any> : {}
   const cfg = structuredClone(DEFAULT_CONFIG)
+  if (x.language === "ru") cfg.language = "ru"
   const oldModels = x.models && typeof x.models === "object" ? x.models : {}
   const legacy: Record<string, unknown> = {
     orchestrator: oldModels.orchestrator ?? oldModels.lead ?? x.strongModel,

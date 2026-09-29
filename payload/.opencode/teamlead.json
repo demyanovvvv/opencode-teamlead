@@ -1,5 +1,6 @@
 {
   "schemaVersion": 2,
+  "language": "en",
   "strategy": "balanced",
   "models": {
     "orchestrator": null,

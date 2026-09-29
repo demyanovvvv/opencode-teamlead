@@ -55,6 +55,7 @@ export interface TrustedCheck {
 
 export interface TeamLeadConfig {
   schemaVersion: 2
+  language: "en" | "ru"
   strategy: Strategy
   models: Record<ModelRole, string | null>
   workerPools: Record<WorkerRole, string[]>

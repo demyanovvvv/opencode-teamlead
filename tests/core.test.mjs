@@ -33,6 +33,12 @@ test("migration preserves useful model config and discards raw commands", () => 
   assert.equal(cfg.verification.checks[0].id, "ok")
 })
 
+test("language defaults to English and accepts Russian preference", () => {
+  assert.equal(migrateConfig({}).language, "en")
+  assert.equal(migrateConfig({ language: "ru" }).language, "ru")
+  assert.equal(migrateConfig({ language: "de" }).language, "en")
+})
+
 test("router never relaxes tool/context hard eligibility", () => {
   const catalog = catalogFromProviderResponse({ connected: ["p"], all: [{ id: "p", models: {
     tiny: { id: "tiny", tool_call: true, limit: { context: 4000 }, cost: { input: 0.1, output: 0.2 } },
