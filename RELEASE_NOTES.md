@@ -1,6 +1,6 @@
-# OpenCode TeamLead v2.1.0
+# OpenCode TeamLead v2.1.1
 
-TeamLead v2.1.0 adds a native OpenCode TUI indicator and command-palette controls, plus a choice of project-local or user-global installation. Execution settings and run history stay isolated per project in either installation mode.
+TeamLead v2.1.1 adds bilingual English/Russian UI and installer support on top of the native OpenCode TUI integration and project-local or user-global installation. Execution settings and run history stay isolated per project in either installation mode.
 
 ## Highlights
 
@@ -9,10 +9,11 @@ TeamLead v2.1.0 adds a native OpenCode TUI indicator and command-palette control
 - **Choose installation scope:** both installers support local and global installation. Global installation shares the plugin, commands, agents, and TUI integration across projects while retaining each project's `.opencode/teamlead.json` and `.opencode/.teamlead/` state.
 - **Safe updates:** TUI registration is idempotent and preserves unrelated plugins and comments in existing `tui.jsonc` files.
 - **Runtime reliability:** persisted-state validation, cross-process state locks, verified-patch recovery, stricter budget admission, and subprocess-tree cancellation are included in this release.
+- **Bilingual experience:** choose English or Russian interactively, or select the language explicitly in the shell installer; existing project settings are preserved during updates.
 
 ## Installation
 
-Download `opencode-teamlead-v2.1.0.tar.gz` and verify it using the accompanying `.sha256` file. Extract the archive and run one of the following commands from its root:
+Download `opencode-teamlead-v2.1.1.tar.gz` and verify it using the accompanying `.sha256` file. Extract the archive and run one of the following commands from its root:
 
 ```bash
 ./install.sh --scope local --project /path/to/project
@@ -22,8 +23,9 @@ Download `opencode-teamlead-v2.1.0.tar.gz` and verify it using the accompanying 
 ```powershell
 .\install.ps1 -InstallScope Local -Project C:\path\to\project
 .\install.ps1 -InstallScope Global
+.\install.ps1 -InstallScope Local -Language ru -Project C:\path\to\project
 ```
 
 Restart OpenCode, then use **Ctrl+P → TeamLead** or run `/lead-doctor`. The supported host family is OpenCode `>=1.18.30 <2.0.0`; TUI integration depends on the host's TUI plugin support.
 
-Documentation: [English README](https://github.com/demyanovvvv/opencode-teamlead/blob/v2.1.0/README.md) · [Russian README](https://github.com/demyanovvvv/opencode-teamlead/blob/v2.1.0/README_RU.md) · [Russian installation guide](https://github.com/demyanovvvv/opencode-teamlead/blob/v2.1.0/INSTALL_RU.md) · [Changelog](https://github.com/demyanovvvv/opencode-teamlead/blob/v2.1.0/CHANGELOG.md).
+Documentation: [English README](https://github.com/demyanovvvv/opencode-teamlead/blob/v2.1.1/README.md) · [Russian README](https://github.com/demyanovvvv/opencode-teamlead/blob/v2.1.1/README_RU.md) · [Russian installation guide](https://github.com/demyanovvvv/opencode-teamlead/blob/v2.1.1/INSTALL_RU.md) · [Changelog](https://github.com/demyanovvvv/opencode-teamlead/blob/v2.1.1/CHANGELOG.md).

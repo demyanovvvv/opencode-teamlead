@@ -1,4 +1,4 @@
-# OpenCode TeamLead v2.1.0 — установка
+# OpenCode TeamLead v2.1.1 — установка
 
 TeamLead v2 поддерживает локальную и глобальную установку и рассчитан на OpenCode `>= 1.18.30` и `< 2.0.0`.
 
@@ -16,6 +16,8 @@ TeamLead v2 поддерживает локальную и глобальную 
 .\install.ps1 -InstallScope Local -Project C:\путь\к\вашему\проекту
 # глобально для текущего пользователя
 .\install.ps1 -InstallScope Global
+# выбрать русский язык явно
+.\install.ps1 -InstallScope Local -Language ru -Project C:\путь\к\вашему\проекту
 ```
 
 4. Перезапустите OpenCode в этом проекте.
@@ -38,6 +40,8 @@ chmod +x ./install.sh
 ./install.sh --scope local --project /path/to/project
 # глобально для текущего пользователя
 ./install.sh --scope global
+# выбрать русский язык явно
+./install.sh --scope local --language ru --project /path/to/project
 ```
 
 После установки перезапустите OpenCode и выполните:

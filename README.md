@@ -1,10 +1,12 @@
-# OpenCode TeamLead v2.1.0
+# OpenCode TeamLead v2.1.1
 
 **Production Adaptive Development Accelerator for OpenCode 1.x.**
 
 [Русский README](README_RU.md) · [Installation guide in Russian](INSTALL_RU.md) · [Release notes](RELEASE_NOTES.md)
 
 TeamLead optimizes one outcome: **the fastest verified correct change at the lowest practical total model cost**. It does not try to maximize agent count. It chooses the minimum orchestration depth needed for the task.
+
+Version 2.1.1 adds bilingual TeamLead UI and installer prompts. Choose English or Russian during an interactive install, or pass `--language en|ru` / `-Language en|ru`; existing project settings remain preserved during updates.
 
 ## Compatibility
 
@@ -126,6 +128,8 @@ Reviewer verdict is submitted through the typed `teamlead_submit_review` tool in
 ./install.sh --scope local --project /path/to/project
 # global install for the current user
 ./install.sh --scope global
+# explicit Russian UI and installer language
+./install.sh --scope local --language ru --project /path/to/project
 ```
 
 ### Windows PowerShell
@@ -136,6 +140,8 @@ Reviewer verdict is submitted through the typed `teamlead_submit_review` tool in
 .\install.ps1 -InstallScope Local -Project C:\path\to\project
 # global install for the current user
 .\install.ps1 -InstallScope Global
+# explicit Russian UI and installer language
+.\install.ps1 -InstallScope Local -Language ru -Project C:\path\to\project
 ```
 
 The installer supports **project-local** and **global** installation. In both modes runtime state and `teamlead.json` remain project-local, so projects keep independent settings, history, Git worktrees, and budgets. Restart OpenCode after installation/update.
@@ -201,6 +207,7 @@ Example project config:
 ```json
 {
   "schemaVersion": 2,
+  "language": "en",
   "strategy": "balanced",
   "models": {
     "orchestrator": null,
@@ -309,7 +316,7 @@ npm run release:bundle
 
 `npm run typecheck` uses the bundled compatibility fixture for the public OpenCode 1.18.30 plugin surface; `npm test` runs deterministic unit/integration tests, including real temporary Git repositories/worktrees. `npm run e2e:host` installs the payload into a clean temporary Git project and checks the real OpenCode server's command/tool registry plus `/lead-doctor`; `npm run e2e:host:plan` and the `lead-models` variant exercise the installed plan/model paths without requiring a model prompt. Set up provider credentials separately before qualifying a real mutating `/lead` run.
 
-## Known limitations in v2.1.0
+## Known limitations in v2.1.1
 
 - The TeamLead TUI requires an OpenCode host with TUI plugin support; the server tools and slash commands remain available on hosts without it.
 - Provider health in the stable 1.18.30 hook surface is based mainly on session errors rather than request-level HTTP latency telemetry. TeamLead must not invent unavailable hooks.

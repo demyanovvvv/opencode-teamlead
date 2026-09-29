@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.1.1 — 2026-09-29
+
+### Localization
+- Added English and Russian TeamLead UI strings and language-aware status indicators.
+- Added interactive language selection and explicit `en` / `ru` installer options.
+- Documented bilingual installation and preserved project settings during updates.
+
 ## 2.1.0 — 2026-09-28
 
 ### Reliability
