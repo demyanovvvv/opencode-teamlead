@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Security and validation
+- Hardened dynamically generated workers with explicit skill and TeamLead recursion denials.
+- Expanded static execution scanning and added runtime permission regression coverage.
+- Clarified that `maxRunMinutes` is an admission deadline rather than forced cancellation of active provider or verification work.
+
+### Testing
+- Host smoke validation now documents its deterministic planning scope separately from model-backed mutating execution.
+
 ## 2.1.2 — 2026-09-29
 
 ### Release

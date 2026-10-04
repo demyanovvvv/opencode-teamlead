@@ -171,6 +171,19 @@ test("team planner is rejected before prompting when its token budget cannot be 
   } finally { await fs.rm(root, { recursive: true, force: true }) }
 })
 
+test("elapsed admission deadline rejects a new model prompt", async () => {
+  const root = await repo()
+  const h = harness(root)
+  try {
+    await writeConfig(root, { budget: { maxRunMinutes: 1 } })
+    const runtime = new TeamLeadRuntime(root, h.client, h.callbacks)
+    await runtime.init()
+    const run = { estimatedTokens: 0, estimatedCostUsd: 0, startedAt: Date.now() - 61_000 }
+    assert.throws(() => runtime.reserveBudget({ id: "NEXT", estimatedTokens: 100 }, 0, run), /Run time budget exceeded/)
+    assert.equal(run.estimatedTokens, 0)
+  } finally { await fs.rm(root, { recursive: true, force: true }) }
+})
+
 
 test("worker provider failure fails over to another eligible connected model", async () => {
   const root = await repo()

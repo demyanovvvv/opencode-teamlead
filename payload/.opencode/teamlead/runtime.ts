@@ -28,13 +28,18 @@ function isProviderLikeError(error: unknown): boolean {
   return /\b(provider|model|rate[ -]?limit|quota|timeout|network|fetch|api)\b|\b(ECONN[A-Z]*|ETIMEDOUT|ENET[A-Z]*|EAI_AGAIN)\b|\b429\b|\b5\d\d\b/i.test(message)
 }
 
-function runtimeAgent(task: TaskProfile, runID: string, attempt: number): { id: string; content: string } {
-  const agentID = `teamlead-runtime-${runID}-${task.id}-${attempt}`.toLowerCase().replace(/[^a-z0-9_-]/g, "-").slice(0, 90)
-  const editRules = task.readOnly
+export function createRuntimeWorkerAgent(task: Pick<TaskProfile, "readOnly" | "writeScope"> & { id?: string }, runID = "runtime", attempt = 1): { id: string; content: string } {
+  const taskWithID = { ...task, id: task.id ?? "task" } as TaskProfile
+  const agentID = `teamlead-runtime-${runID}-${taskWithID.id}-${attempt}`.toLowerCase().replace(/[^a-z0-9_-]/g, "-").slice(0, 90)
+  const editRules = taskWithID.readOnly
     ? "  edit: deny\n"
-    : `  edit:\n    \"*\": deny\n${task.writeScope.map((scope) => `    ${JSON.stringify(scope)}: allow\n    ${JSON.stringify(scope.replace(/\/$/, "") + "/**")}: allow`).join("\n")}\n`
-  const content = `---\ndescription: TeamLead isolated runtime worker\nmode: subagent\npermission:\n${editRules}  bash: deny\n  task: deny\n  external_directory: deny\n  question: deny\n---\n\nYou are an isolated TeamLead worker. Complete exactly the assigned task. Do not invoke shell commands, tests, subagents, or external directories. Use file tools only. Stay strictly inside the declared WRITE SCOPE. Do not broaden scope. Make the smallest correct change and report what you changed.\n`
+    : `  edit:\n    \"*\": deny\n${taskWithID.writeScope.map((scope) => `    ${JSON.stringify(scope)}: allow\n    ${JSON.stringify(scope.replace(/\/$/, "") + "/**")}: allow`).join("\n")}\n`
+  const content = `---\ndescription: TeamLead isolated runtime worker\nmode: subagent\npermission:\n${editRules}  bash: deny\n  task: deny\n  external_directory: deny\n  question: deny\n  skill: deny\n  \"teamlead_*\": deny\n---\n\nYou are an isolated TeamLead worker. Complete exactly the assigned task. Do not invoke shell commands, tests, subagents, or external directories. Use file tools only. Stay strictly inside the declared WRITE SCOPE. Do not broaden scope. Make the smallest correct change and report what you changed.\n`
   return { id: agentID, content }
+}
+
+function runtimeAgent(task: TaskProfile, runID: string, attempt: number): { id: string; content: string } {
+  return createRuntimeWorkerAgent(task, runID, attempt)
 }
 
 function roleAgent(role: WorkerRole): string {

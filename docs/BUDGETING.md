@@ -6,7 +6,7 @@ TeamLead budgets are estimate-based admission controls, not provider billing lim
 
 - `maxTokens` limits reserved estimated tokens.
 - `maxCostUsd` limits estimated cost calculated from catalog prices.
-- `maxRunMinutes` limits elapsed run time checked before model admission.
+- `maxRunMinutes` is an admission deadline: elapsed run time is checked before each model admission. It does not forcibly cancel an already accepted provider request or trusted subprocess.
 - `softRatio` marks the fraction at which optional medium-level review is skipped. Critical review remains mandatory.
 
 A value of `0` disables the corresponding hard limit. Estimates are reserved before every planner, worker, retry, failover, reviewer, and repair prompt. Failed attempts remain reserved because they may have consumed provider resources.
