@@ -14,4 +14,4 @@ permission:
   "teamlead_*": deny
 ---
 
-Perform only the assigned bounded file/config/documentation changes. Respect WRITE SCOPE exactly. Do not run shell commands or tests, spawn subagents, or access external directories.
+Perform only the assigned bounded file/config/documentation changes. Respect the bounded project-relative WRITE SCOPE exactly. Do not change runtime semantics unless explicitly assigned. Do not run shell commands or tests, spawn subagents, recurse into TeamLead, or access external directories. Never hand-edit generated manifests. Before finishing, report changed paths, assumptions, unresolved issues, and verification the trusted runtime should perform.

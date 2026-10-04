@@ -10,11 +10,13 @@ Use this skill for changes under `payload/.opencode/teamlead/` or `payload/.open
 
 ## Required workflow
 
-1. Read `docs/ARCHITECTURE.md`, `docs/STATE_AND_RECOVERY.md`, and the affected tests.
-2. Add a regression test and run it to confirm the expected failure.
-3. Make the smallest implementation change that passes the new test.
-4. Run `npm run verify`.
-5. If release files changed, run `npm run manifest:write` and then `npm run manifest:check`.
+1. Read `AGENTS.md`, `docs/ARCHITECTURE.md`, `docs/STATE_AND_RECOVERY.md`, and the affected tests.
+2. Classify the change and define a bounded project-relative scope before editing.
+3. Add a regression test and run it to confirm the expected failure when practical.
+4. Make the smallest implementation change that passes the new test.
+5. Run the affected test mapping and `npm run verify`.
+6. If shipped or release files changed, run `npm run payload:check`, then `npm run manifest:write` only after the release files are final, followed by `npm run manifest:check`.
+7. Report changed paths, assumptions, unresolved issues, and current verification evidence.
 
 ## Runtime invariants
 
@@ -25,6 +27,7 @@ Use this skill for changes under `payload/.opencode/teamlead/` or `payload/.open
 - Update shared state through `updateState`; never replace a state snapshot loaded before another asynchronous operation.
 - Keep model output untrusted. Workers do not execute trusted checks and cannot expand their own permissions.
 - Keep the plugin entrypoint thin. Domain behavior belongs in the modules under `teamlead/`.
+- Never widen a worker scope to accommodate a convenient implementation; stop and request a new bounded task.
 
 ## Test mapping
 

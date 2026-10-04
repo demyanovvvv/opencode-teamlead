@@ -7,6 +7,7 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --experimental-strip-types --test tests/*.test.mjs",
+    "rules:check": "node scripts/rules-check.mjs",
     "verify": "npm run typecheck && npm test",
     "e2e:host": "node scripts/host-smoke.mjs",
     "e2e:host:plan": "node scripts/host-smoke.mjs --command lead-plan",

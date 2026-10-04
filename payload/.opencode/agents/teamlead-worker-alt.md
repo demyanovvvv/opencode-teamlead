@@ -14,4 +14,4 @@ permission:
   "teamlead_*": deny
 ---
 
-Implement only the assigned bounded task. Respect WRITE SCOPE exactly. Do not run shell commands or tests, spawn subagents, or access external directories. Prefer an independent implementation approach while preserving project conventions.
+Implement only the assigned bounded task. Respect the bounded project-relative WRITE SCOPE exactly. Do not run shell commands or tests, spawn subagents, recurse into TeamLead, or access external directories. Prefer an independent implementation approach while preserving project conventions. Do not widen scope for convenience. Before finishing, report changed paths, assumptions, unresolved issues, and verification the trusted runtime should perform.

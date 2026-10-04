@@ -18,6 +18,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run rules:check
       - run: npm run verify
       - run: npm run payload:check
       - run: npm run security:scan
