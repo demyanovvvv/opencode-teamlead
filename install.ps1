@@ -4,7 +4,8 @@ param(
   [ValidateSet("Local", "Global")]
   [string]$InstallScope,
   [ValidateSet("en", "ru")]
-  [string]$Language
+  [string]$Language,
+  [switch]$Uninstall
 )
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -34,6 +35,18 @@ $Dst = if ($InstallScope -eq "Global") {
 } else { Join-Path $Project ".opencode" }
 
 if ($InstallScope -eq "Local" -and -not (Test-Path $Project -PathType Container)) { throw "Project directory does not exist: $Project" }
+$Updating = Test-Path -LiteralPath (Join-Path $Dst "plugins/teamlead.ts")
+if ($Uninstall) {
+  & node (Join-Path $Root "scripts/merge-tui.mjs") $Dst uninstall
+  if ($LASTEXITCODE -ne 0) { throw "Could not uninstall TeamLead" }
+  Write-Host "Removed OpenCode TeamLead from: $Dst"
+  return
+}
+if (-not $PSBoundParameters.ContainsKey("Language") -and (Test-Path -LiteralPath (Join-Path $Dst "teamlead/language.json"))) {
+  $Language = (Get-Content -LiteralPath (Join-Path $Dst "teamlead/language.json") -Raw | ConvertFrom-Json).language
+}
+& node (Join-Path $Root "scripts/merge-tui.mjs") $Dst prepare
+if ($LASTEXITCODE -ne 0) { throw "Could not prepare TeamLead installation" }
 New-Item -ItemType Directory -Force -Path $Dst, (Join-Path $Dst "plugins"), (Join-Path $Dst "teamlead"), (Join-Path $Dst "agents"), (Join-Path $Dst "commands") | Out-Null
 
 # Remove only command files owned by pre-v2 TeamLead releases. Do not touch unrelated user commands.
@@ -94,5 +107,5 @@ if (Test-Path $Package) {
   Copy-Item -Force (Join-Path $Src "package.json") $Package
 }
 
-Write-Host "Installed OpenCode TeamLead v2.1.2 ($InstallScope) into: $Dst"
+Write-Host "$(if ($Updating) { 'Updated' } else { 'Installed' }) OpenCode TeamLead v2.1.2 ($InstallScope) into: $Dst"
 Write-Host "Restart OpenCode, then run: /lead-doctor"

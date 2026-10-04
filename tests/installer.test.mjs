@@ -167,3 +167,81 @@ test("PowerShell installer preserves TUI JSONC comments and existing plugins", a
     await assert.rejects(fs.access(path.join(directory, "tui.json")))
   } finally { await fs.rm(tmp, { recursive: true, force: true }) }
 })
+function lifecycle(project, uninstall = false, scope = "local", env = process.env) {
+  const windows = process.platform === "win32" && !process.env.TEAMLEAD_TEST_BASH
+  const args = windows
+    ? ["-NoProfile", "-File", path.join(root, "install.ps1"), "-InstallScope", scope === "local" ? "Local" : "Global", "-Project", project, ...(uninstall ? ["-Uninstall"] : [])]
+    : [path.join(root, "install.sh"), "--scope", scope, "--project", project, ...(uninstall ? ["--uninstall"] : [])]
+  const result = spawnSync(windows ? "pwsh" : process.env.TEAMLEAD_TEST_BASH || "bash", windows ? args : args.map((arg) => arg.replaceAll("\\", "/")), { encoding: "utf8", env })
+  assert.equal(result.status, 0, result.stderr || result.stdout)
+  return result.stdout
+}
+
+test("installer updates owned files and uninstall removes TeamLead while preserving user files", async () => {
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "teamlead-lifecycle-"))
+  const oc = path.join(tmp, ".opencode")
+  try {
+    await fs.mkdir(path.join(oc, "commands"), { recursive: true })
+    await fs.writeFile(path.join(oc, "commands", "my-command.md"), "user command")
+    const originalPackage = { private: false, dependencies: { other: "1.0.0", "@opencode-ai/plugin": "original" } }
+    await fs.writeFile(path.join(oc, "package.json"), JSON.stringify(originalPackage))
+    await fs.writeFile(path.join(oc, "tui.jsonc"), '{\n// keep this comment\n"theme":"custom", "plugin":["other.ts"],\n}\n')
+    lifecycle(tmp)
+    await fs.writeFile(path.join(oc, "teamlead", "language.json"), '{"language":"ru"}')
+    await fs.writeFile(path.join(oc, "agents", "teamlead-obsolete.md"), "obsolete")
+    await fs.writeFile(path.join(oc, "teamlead", "obsolete.ts"), "obsolete")
+    await fs.writeFile(path.join(oc, "plugins", "teamlead.ts"), "old code")
+    assert.match(lifecycle(tmp), /Updated|Обновл/)
+    await assert.rejects(fs.access(path.join(oc, "agents", "teamlead-obsolete.md")))
+    await assert.rejects(fs.access(path.join(oc, "teamlead", "obsolete.ts")))
+    assert.equal(JSON.parse(await fs.readFile(path.join(oc, "teamlead", "language.json"), "utf8")).language, "ru")
+    assert.equal(await fs.readFile(path.join(oc, "plugins", "teamlead.ts"), "utf8"), await fs.readFile(path.join(root, "payload", ".opencode", "plugins", "teamlead.ts"), "utf8"))
+    await fs.mkdir(path.join(oc, ".teamlead"), { recursive: true })
+    await fs.writeFile(path.join(oc, ".teamlead", "state.json"), "{}")
+    lifecycle(tmp, true)
+    lifecycle(tmp, true)
+    for (const rel of ["teamlead", "teamlead.json", ".teamlead", ".teamlead-install.json", "plugins/teamlead.ts", "commands/lead.md", "agents/teamlead-lead.md"])
+      await assert.rejects(fs.access(path.join(oc, rel)))
+    assert.deepEqual(JSON.parse(await fs.readFile(path.join(oc, "package.json"), "utf8")), originalPackage)
+    assert.equal(await fs.readFile(path.join(oc, "commands", "my-command.md"), "utf8"), "user command")
+    const tui = await fs.readFile(path.join(oc, "tui.jsonc"), "utf8")
+    assert.match(tui, /keep this comment/)
+    assert.match(tui, /other.ts/)
+    assert.doesNotMatch(tui, /teamlead/)
+  } finally { await fs.rm(tmp, { recursive: true, force: true }) }
+})
+
+test("fresh uninstall removes installer-created configuration and global uninstall stays project-local", async () => {
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "teamlead-uninstall-"))
+  try {
+    lifecycle(tmp)
+    lifecycle(tmp, true)
+    await assert.rejects(fs.access(path.join(tmp, ".opencode")))
+    const global = path.join(tmp, "global")
+    const env = { ...process.env, OPENCODE_CONFIG_DIR: global }
+    lifecycle(tmp, false, "global", env)
+    await fs.mkdir(path.join(tmp, ".opencode", ".teamlead"), { recursive: true })
+    lifecycle(tmp, true, "global", env)
+    await assert.rejects(fs.access(global))
+    await fs.access(path.join(tmp, ".opencode", ".teamlead"))
+  } finally { await fs.rm(tmp, { recursive: true, force: true }) }
+})
+test("uninstall removes duplicate TUI registrations and rejects linked shared directories", async () => {
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "teamlead-uninstall-links-"))
+  const oc = path.join(tmp, ".opencode")
+  const outside = path.join(tmp, "outside")
+  try {
+    lifecycle(tmp)
+    await fs.writeFile(path.join(oc, "tui.json"), '{"plugin":["other.ts","./teamlead/tui.tsx","./teamlead/tui.tsx"]}')
+    lifecycle(tmp, true)
+    assert.deepEqual(JSON.parse(await fs.readFile(path.join(oc, "tui.json"), "utf8")).plugin, ["other.ts"])
+    await fs.mkdir(outside)
+    await fs.mkdir(oc, { recursive: true })
+    await fs.symlink(outside, path.join(oc, "commands"), process.platform === "win32" ? "junction" : "dir")
+    await fs.writeFile(path.join(outside, "lead.md"), "keep")
+    const result = spawnSync(process.execPath, [path.join(root, "scripts", "merge-tui.mjs"), oc, "uninstall"], { encoding: "utf8" })
+    assert.notEqual(result.status, 0)
+    assert.match(result.stderr, /Linked installer path/)
+    assert.equal(await fs.readFile(path.join(outside, "lead.md"), "utf8"), "keep")
+  } finally { await fs.rm(tmp, { recursive: true, force: true }) }
+})

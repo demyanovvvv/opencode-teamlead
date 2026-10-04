@@ -5,12 +5,15 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCOPE=""
 PROJECT=""
 LANGUAGE=""
+UNINSTALL=false
+LANGUAGE_EXPLICIT=false
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --scope) SCOPE="${2:-}"; shift 2 ;;
     --project) PROJECT="${2:-}"; shift 2 ;;
-    --language) LANGUAGE="${2:-}"; shift 2 ;;
-    -h|--help) echo "Usage: ./install.sh [PROJECT] | --scope local --project PROJECT | --scope global [--language en|ru]"; exit 0 ;;
+    --language) LANGUAGE="${2:-}"; LANGUAGE_EXPLICIT=true; shift 2 ;;
+    --uninstall) UNINSTALL=true; shift ;;
+    -h|--help) echo "Usage: ./install.sh [PROJECT] | --scope local --project PROJECT | --scope global [--language en|ru] [--uninstall]"; exit 0 ;;
     -*) echo "Unknown option: $1" >&2; exit 2 ;;
     *) [[ -z "$PROJECT" ]] || { echo "Project specified twice" >&2; exit 2; }; PROJECT="$1"; shift ;;
   esac
@@ -43,6 +46,17 @@ if [[ ! -d "$PROJECT" ]]; then
   exit 2
 fi
 
+UPDATING=false
+[[ ! -f "$DST/plugins/teamlead.ts" ]] || UPDATING=true
+if [[ "$UNINSTALL" == true ]]; then
+  node "$ROOT/scripts/merge-tui.mjs" "$DST" uninstall
+  echo "Removed OpenCode TeamLead from: $DST"
+  exit 0
+fi
+if [[ "$LANGUAGE_EXPLICIT" == false && -f "$DST/teamlead/language.json" ]]; then
+  LANGUAGE="$(node -e 'const fs=require("fs");console.log(JSON.parse(fs.readFileSync(process.argv[1],"utf8").replace(/^\uFEFF/,"")).language)' "$DST/teamlead/language.json")"
+fi
+node "$ROOT/scripts/merge-tui.mjs" "$DST" prepare
 mkdir -p "$DST/plugins" "$DST/teamlead" "$DST/agents" "$DST/commands"
 
 # Remove only command files owned by pre-v2 TeamLead releases. Do not touch unrelated user commands.
@@ -89,5 +103,6 @@ else
   echo '         Ensure it contains dependency "@opencode-ai/plugin": ">=1.18.30 <2.0.0" before restart.' >&2
 fi
 
-echo "Installed OpenCode TeamLead v2.1.2 ($SCOPE) into: $DST"
+if [[ "$UPDATING" == true ]]; then ACTION="Updated"; else ACTION="Installed"; fi
+echo "$ACTION OpenCode TeamLead v2.1.2 ($SCOPE) into: $DST"
 echo "Restart OpenCode, then run: /lead-doctor"

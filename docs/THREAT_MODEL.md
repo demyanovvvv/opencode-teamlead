@@ -44,3 +44,6 @@ A test/build process may execute arbitrary code from the worktree. TeamLead v2.0
 
 
 Lock files contain an owner token, process ID, and hostname. A lock is removed only by its owner; stale integration locks are reclaimed only when an old same-host process is no longer alive. Cross-host liveness cannot be proven from a local filesystem and therefore fails closed.
+## Installer ownership
+
+Install/update/uninstall target the explicitly selected local or global OpenCode configuration directory. Shared installer paths and their ancestors reject symbolic links/junctions before mutation. Cleanup uses shipped/legacy command names and the reserved `teamlead-*.md` agent namespace. It preserves unrelated plugins and commands, removes only the TeamLead TUI specifier while keeping JSONC comments, and records the original SDK dependency for restoration. Global uninstall does not scan projects for local settings or history. Close OpenCode before removal so active processes do not recreate runtime state.

@@ -145,6 +145,21 @@ Reviewer verdict is submitted through the typed `teamlead_submit_review` tool in
 ```
 
 The installer supports **project-local** and **global** installation. In both modes runtime state and `teamlead.json` remain project-local, so projects keep independent settings, history, Git worktrees, and budgets. Restart OpenCode after installation/update.
+### Update and uninstall
+
+Run the same installation command again to update an existing installation. The installer replaces runtime files, removes obsolete TeamLead agents, and preserves project settings and the current UI language unless a language is explicitly selected.
+
+```powershell
+.\install.ps1 -InstallScope Local -Project C:\path\to\project -Uninstall
+.\install.ps1 -InstallScope Global -Uninstall
+```
+
+```bash
+./install.sh --scope local --project /path/to/project --uninstall
+./install.sh --scope global --uninstall
+```
+
+Close OpenCode before uninstalling. Uninstall removes TeamLead code, agents, commands, project settings, history/worktree files, and TUI registration in the selected scope. Unrelated OpenCode files and JSONC comments are preserved. The installer records its shared-package changes in `.teamlead-install.json` so uninstall can restore the previous SDK dependency or remove its own dependency. Empty installer-created configuration files/directories are removed. Global uninstall removes the global installation; run local uninstall for each project whose TeamLead settings/history should also be deleted.
 
 The installer:
 

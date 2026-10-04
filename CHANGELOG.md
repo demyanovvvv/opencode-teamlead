@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Installer
+- Repeated installation now reports updates, removes obsolete TeamLead agents, and preserves the installed UI language unless explicitly overridden.
+- Added `--uninstall` / `-Uninstall` for scoped removal of TeamLead files, settings, history, and TUI registration with restoration of recorded SDK dependencies.
+- Installer shared-path validation rejects symbolic links/junctions before changing files.
+
 ### Security and validation
 - Hardened dynamically generated workers with explicit skill and TeamLead recursion denials.
 - Expanded static execution scanning and added runtime permission regression coverage.
