@@ -43,7 +43,13 @@ async function worktrees(directory) {
     for (const name of entries) if (await exists(path.join(base, name, ".git"))) throw new Error(`Cannot verify Git worktree: ${path.join(base, name)}`)
     return []
   }
-  const registered = result.stdout.split("\0").filter((line) => line.startsWith("worktree ")).map((line) => path.resolve(line.slice(9)))
+  const fields = result.stdout.split("\0")
+  const registered = []
+  for (let index = 0; index < fields.length; index++) {
+    const field = fields[index]
+    if (field === "worktree" && fields[index + 1]) registered.push(path.resolve(fields[++index]))
+    else if (field.startsWith("worktree ")) registered.push(path.resolve(field.slice(9)))
+  }
   const comparisonPath = (file) => process.platform === "win32" ? file.toLowerCase() : file
   const owned = registered.filter((file) => comparisonPath(file).startsWith(comparisonPath(path.resolve(base)) + path.sep))
   for (const file of owned) await rejectLinkedPath(file)
