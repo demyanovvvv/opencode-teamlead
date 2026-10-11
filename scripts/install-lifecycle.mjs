@@ -38,16 +38,10 @@ async function worktrees(directory) {
   const entries = await fs.readdir(base)
   for (const name of entries) await rejectLinkedPath(path.join(base, name))
   const project = path.dirname(directory)
-  const result = spawnSync("git", ["worktree", "list", "--porcelain"], { cwd: project, encoding: "utf8", shell: false, timeout: 120_000 })
-  if (result.status !== 0) {
-    for (const name of entries) if (await exists(path.join(base, name, ".git"))) throw new Error(`Cannot verify Git worktree: ${path.join(base, name)}`)
-    return []
-  }
-  const registered = [...result.stdout.matchAll(/^worktree (.+)$/gm)].map((match) => path.resolve(match[1].trim()))
-  const comparisonPath = (file) => process.platform === "win32" ? file.toLowerCase() : file
-  const owned = registered.filter((file) => comparisonPath(file).startsWith(comparisonPath(path.resolve(base)) + path.sep))
-  for (const file of owned) await rejectLinkedPath(file)
-  return owned.map((file) => ({ project, file }))
+  // TeamLead creates only direct worktree directories below this private base.
+  // Using those canonical paths avoids platform-specific `git worktree list`
+  // formatting while still requiring Git to unregister each path.
+  return entries.map((name) => ({ project, file: path.resolve(base, name) }))
 }
 
 async function cleanupData(directory, registered) {

@@ -241,8 +241,9 @@ test("uninstall removes registered Git worktrees and installer-created dependenc
     git("worktree", "add", "--detach", worktree, "HEAD")
     await fs.mkdir(path.join(oc, "node_modules", "@opencode-ai", "plugin"), { recursive: true })
     await fs.writeFile(path.join(oc, "bun.lock"), "generated dependency lock")
-    lifecycle(process.platform === "win32" ? tmp.replace(/^[a-z]:/i, (drive) => drive.toLowerCase()) : tmp, true)
-    assert.equal(git("worktree", "list", "--porcelain").includes("orphan"), false)
+    const removal = lifecycle(process.platform === "win32" ? tmp.replace(/^[a-z]:/i, (drive) => drive.toLowerCase()) : tmp, true)
+    const remaining = git("worktree", "list", "--porcelain")
+    assert.equal(remaining.includes("orphan"), false, `${removal}\n${remaining}`)
     await assert.rejects(fs.access(oc))
   } finally { await fs.rm(tmp, { recursive: true, force: true }) }
 })
