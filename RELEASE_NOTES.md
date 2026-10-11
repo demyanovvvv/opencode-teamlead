@@ -1,32 +1,42 @@
-# OpenCode TeamLead v2.1.2
+# OpenCode TeamLead 2.2.0
 
-TeamLead v2.1.2 refreshes the bilingual English/Russian documentation and release metadata while retaining the localized UI and installer support. Execution settings and run history stay isolated per project in either installation mode.
+## English
 
-## Highlights
+This release adds a shared installation/removal lifecycle and complete scoped cleanup, with refreshed bilingual documentation.
 
-- **Live status at the prompt:** see the execution mode, phase, completed tasks, and active workers without opening the run log. An interrupted run is distinguished from a live one after a restart.
-- **TeamLead in Ctrl+P:** open status and history, plan or execute a goal, resume a run, and reach models, settings, and diagnostics from the command palette. Existing `/lead*` commands remain available.
-- **Choose installation scope:** both installers support local and global installation. Global installation shares the plugin, commands, agents, and TUI integration across projects while retaining each project's `.opencode/teamlead.json` and `.opencode/.teamlead/` state.
-- **Safe updates:** TUI registration is idempotent and preserves unrelated plugins and comments in existing `tui.jsonc` files.
-- **Runtime reliability:** persisted-state validation, cross-process state locks, verified-patch recovery, stricter budget admission, and subprocess-tree cancellation are included in this release.
-- **Bilingual experience:** choose English or Russian interactively, or select the language explicitly in the shell installer; existing project settings are preserved during updates.
-- **Updated documentation:** English and Russian README files, installation guidance, and release metadata are aligned with the current patch release.
+### Highlights
 
-## Installation
+- Standalone `uninstall.ps1` and `uninstall.sh` with local/global selection and local project prompts.
+- Installation and updates use the local distribution; package metadata supplies the version and records the installed version and owned commands.
+- Global plugin startup registers projects under an owner-token lock. Global removal cleans registered project data while preserving independent local installations.
+- Owned Git worktrees are removed through Git, including their registrations.
+- Original SDK dependencies are restored; generated dependency artifacts are removed only when their ownership and package requirements permit it.
+- Installer paths reject symbolic links/junctions, and malformed registry entries stop cleanup before project data is removed.
+- English and Russian README guides, MIT licensing, security reporting and GitHub contribution templates.
+- Worker permission hardening and expanded deterministic security coverage.
 
-Download `opencode-teamlead-v2.1.2.tar.gz` and verify it using the accompanying `.sha256` file. Extract the archive and run one of the following commands from its root:
+### Installation
 
-```bash
-./install.sh --scope local --project /path/to/project
-./install.sh --scope global
-```
+Download `opencode-teamlead-v2.2.0.tar.gz` and its `.sha256` file from this release, verify the archive, extract it and run `install.ps1` or `bash ./install.sh`. Node.js 22.6+ is required. See [compatibility](docs/COMPATIBILITY.md) for OpenCode requirements. Restart OpenCode after installation.
 
-```powershell
-.\install.ps1 -InstallScope Local -Project C:\path\to\project
-.\install.ps1 -InstallScope Global
-.\install.ps1 -InstallScope Local -Language ru -Project C:\path\to\project
-```
+### Updating and removal
 
-Restart OpenCode, then use **Ctrl+P → TeamLead** or run `/lead-doctor`. The supported host family is OpenCode `>=1.18.30 <2.0.0`; TUI integration depends on the host's TUI plugin support.
+Run the installer from the new distribution in the same scope. Settings, history and UI language are preserved unless language is explicitly supplied. Close OpenCode before running the uninstaller. Projects used only by older global installations must be opened after updating to enter the registry, or cleaned with local removal. Independent local installations are preserved by global removal.
 
-Documentation: [English README](https://github.com/demyanovvvv/opencode-teamlead/blob/v2.1.2/README.md) · [Russian README](https://github.com/demyanovvvv/opencode-teamlead/blob/v2.1.2/README_RU.md) · [Russian installation guide](https://github.com/demyanovvvv/opencode-teamlead/blob/v2.1.2/INSTALL_RU.md) · [Changelog](https://github.com/demyanovvvv/opencode-teamlead/blob/v2.1.2/CHANGELOG.md).
+## Русский
+
+Релиз добавляет общую логику установки и полного удаления по выбранной области, а также обновлённую двуязычную документацию.
+
+- Отдельные `uninstall.ps1` и `uninstall.sh` предлагают локальную или глобальную область и путь к локальному проекту.
+- Установка и обновление работают из локальной папки дистрибутива. Версия берётся из `package.json` и сохраняется вместе со списком установленных команд.
+- Глобальный плагин регистрирует проекты с блокировкой реестра. Глобальное удаление очищает их данные, сохраняя самостоятельные локальные установки.
+- Временные Git worktree удаляются вместе с регистрацией в Git.
+- Исходные зависимости восстанавливаются; созданные артефакты зависимостей удаляются при подтверждённом владении и отсутствии других требований пакета.
+- Проверяются ссылки и записи реестра; усилены разрешения исполнителей и проверки безопасности.
+- Подготовлены README на двух языках, лицензия MIT и документы для участников GitHub.
+
+Распакуйте архив и запустите `install.ps1` либо `bash ./install.sh`. Требуется Node.js 22.6+. При обновлении настройки и история сохраняются. После установки перезапустите OpenCode; перед удалением закройте его. Старые проекты глобальной установки нужно открыть после обновления для регистрации либо очистить локальным деинсталлером.
+
+## Links
+
+[English README](README.md) · [Русский README](README_RU.md) · [Installation](INSTALL_RU.md) · [Changelog](CHANGELOG.md) · [Validation](RELEASE_VALIDATION.md)

@@ -150,8 +150,9 @@ if (mode === "prepare") {
   process.exit(0)
 }
 
-if (mode === "uninstall") {
+if (mode === "uninstall" || mode === "check-uninstall") {
   const saved = fs.existsSync(metadata) ? readJSON(metadata) : null
+  if (saved?.commands !== undefined && (!Array.isArray(saved.commands) || saved.commands.some((name) => typeof name !== "string" || !/^lead[\w-]*\.md$/.test(name)))) throw new Error("Invalid installed command metadata")
   // Compute shared-file changes first: malformed configuration must not cause partial removal.
   const tuiChanges = []
   for (const target of [json, jsonc]) {
@@ -166,6 +167,7 @@ if (mode === "uninstall") {
     else delete pkg.dependencies[dependency]
     if (!Object.keys(pkg.dependencies).length) delete pkg.dependencies
   }
+  if (mode === "check-uninstall") process.exit(0)
   for (const [target, source, remove] of tuiChanges) {
     if (remove) fs.rmSync(target)
     else fs.writeFileSync(target, source)
@@ -177,6 +179,10 @@ if (mode === "uninstall") {
   const source = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../payload/.opencode")
   // Use the shipped command list rather than a broad lead* wildcard over user commands.
   const commands = fs.readdirSync(path.join(source, "commands")).filter((name) => /^lead.*\.md$/.test(name))
+  for (const name of saved?.commands ?? []) {
+    if (typeof name !== "string" || !/^lead[\w-]*\.md$/.test(name)) throw new Error("Invalid installed command metadata")
+    commands.push(name)
+  }
   commands.push("lead-review.md", "lead-dashboard.md", "lead-worker.md", "lead-dashboard-clear.md", ...["profiler", "router", "adaptive", "runtime", "intelligence", "execution", "contracts", "verify"].map((name) => `lead-${name}.md`), ...["dashboard", "worker", "dashboard-clear", "settings", "models", "profiler", "router", "adaptive", "runtime", "intelligence", "execution", "contracts", "verify"].map((name) => `tl-${name}.md`))
   for (const name of commands) fs.rmSync(path.join(root, "commands", name), { force: true })
   const agents = path.join(root, "agents")

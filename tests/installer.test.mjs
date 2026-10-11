@@ -177,6 +177,155 @@ function lifecycle(project, uninstall = false, scope = "local", env = process.en
   return result.stdout
 }
 
+function entry(scriptRoot, args = [], options = {}, uninstall = false) {
+  const windows = process.platform === "win32" && !process.env.TEAMLEAD_TEST_BASH
+  const script = path.join(scriptRoot, `${uninstall ? "uninstall" : "install"}.${windows ? "ps1" : "sh"}`)
+  const parameters = windows ? args : args.map((arg) => arg.replaceAll("\\", "/"))
+  return spawnSync(windows ? "pwsh" : process.env.TEAMLEAD_TEST_BASH || "bash", windows ? ["-NoProfile", "-File", script, ...parameters] : [script.replaceAll("\\", "/"), ...parameters], { encoding: "utf8", ...options, ...(options.input && !windows ? { input: options.input.replaceAll("\\", "/") } : {}) })
+}
+
+const scopeArgs = (scope, project) => process.platform === "win32" && !process.env.TEAMLEAD_TEST_BASH
+  ? ["-InstallScope", scope === "global" ? "Global" : "Local", ...(project ? ["-Project", project] : [])]
+  : ["--scope", scope, ...(project ? ["--project", project] : [])]
+
+test("update reads the distribution version and preserves project settings", async () => {
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "teamlead-version-"))
+  const project = path.join(tmp, "project with spaces")
+  const distribution = path.join(tmp, "distribution")
+  try {
+    await fs.mkdir(project)
+    lifecycle(project)
+    const settings = '{"strategy":"quality","language":"ru"}\n'
+    await fs.writeFile(path.join(project, ".opencode", "teamlead.json"), settings)
+    await fs.mkdir(distribution)
+    for (const name of ["payload", "scripts", "install.ps1", "install.sh"]) await fs.cp(path.join(root, name), path.join(distribution, name), { recursive: true })
+    await fs.writeFile(path.join(distribution, "package.json"), '{"version":"9.8.7"}')
+    const result = entry(distribution, scopeArgs("local", project))
+    assert.equal(result.status, 0, result.stderr || result.stdout)
+    assert.match(result.stdout, /9\.8\.7/)
+    assert.equal(JSON.parse(await fs.readFile(path.join(project, ".opencode", ".teamlead-install.json"), "utf8")).version, "9.8.7")
+    assert.equal(await fs.readFile(path.join(project, ".opencode", "teamlead.json"), "utf8"), settings)
+  } finally { await fs.rm(tmp, { recursive: true, force: true }) }
+})
+
+test("standalone installer and uninstaller prompt for scope and local project", async () => {
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "teamlead-menu-"))
+  const project = path.join(tmp, "project with spaces")
+  try {
+    await fs.mkdir(project)
+    const install = entry(root, [], { cwd: tmp, input: `1\n1\n${project}\n` })
+    assert.equal(install.status, 0, install.stderr || install.stdout)
+    await fs.access(path.join(project, ".opencode", "plugins", "teamlead.ts"))
+    const uninstall = entry(root, [], { cwd: tmp, input: `1\n1\n${project}\n` }, true)
+    assert.equal(uninstall.status, 0, uninstall.stderr || uninstall.stdout)
+    assert.match(uninstall.stdout, /removed|uninstall|удал/i)
+    await assert.rejects(fs.access(path.join(project, ".opencode")))
+  } finally { await fs.rm(tmp, { recursive: true, force: true }) }
+})
+
+test("uninstall removes registered Git worktrees and installer-created dependency artifacts", async () => {
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "teamlead-remove-worktrees-"))
+  const git = (...args) => {
+    const result = spawnSync("git", args, { cwd: tmp, encoding: "utf8" })
+    assert.equal(result.status, 0, result.stderr)
+    return result.stdout
+  }
+  try {
+    git("init")
+    git("-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "--allow-empty", "-m", "initial")
+    lifecycle(tmp)
+    const oc = path.join(tmp, ".opencode")
+    // Git canonicalizes Windows drive letters; the caller's spelling can differ.
+    const worktree = path.join(oc, ".teamlead", "worktrees", "orphan")
+    await fs.mkdir(path.dirname(worktree), { recursive: true })
+    git("worktree", "add", "--detach", worktree, "HEAD")
+    await fs.mkdir(path.join(oc, "node_modules", "@opencode-ai", "plugin"), { recursive: true })
+    await fs.writeFile(path.join(oc, "bun.lock"), "generated dependency lock")
+    const removal = lifecycle(process.platform === "win32" ? tmp.replace(/^[a-z]:/i, (drive) => drive.toLowerCase()) : tmp, true)
+    const remaining = git("worktree", "list", "--porcelain")
+    assert.equal(remaining.includes("orphan"), false, `${removal}\n${remaining}`)
+    await assert.rejects(fs.access(oc))
+  } finally { await fs.rm(tmp, { recursive: true, force: true }) }
+})
+
+test("global uninstall clears registered projects but preserves independent local installations", async () => {
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "teamlead-global-projects-"))
+  const global = path.join(tmp, "global")
+  const projects = [path.join(tmp, "global-project"), path.join(tmp, "local-project")]
+  try {
+    for (const project of projects) await fs.mkdir(project)
+    const env = { ...process.env, OPENCODE_CONFIG_DIR: global }
+    lifecycle(tmp, false, "global", env)
+    const { registerGlobalProject } = await import("../payload/.opencode/teamlead/install-registry.ts")
+    await Promise.all(projects.map((project) => registerGlobalProject(project, global)))
+    for (const project of projects) await fs.writeFile(path.join(project, ".opencode", "teamlead.json"), '{"language":"ru"}')
+    lifecycle(projects[1])
+    const result = entry(root, scopeArgs("global"), { env }, true)
+    assert.equal(result.status, 0, result.stderr || result.stdout)
+    await assert.rejects(fs.access(global))
+    await assert.rejects(fs.access(path.join(projects[0], ".opencode")))
+    await fs.access(path.join(projects[1], ".opencode", "plugins", "teamlead.ts"))
+    assert.equal(await fs.readFile(path.join(projects[1], ".opencode", "teamlead.json"), "utf8"), '{"language":"ru"}')
+  } finally { await fs.rm(tmp, { recursive: true, force: true }) }
+})
+
+test("global cleanup rejects forged registry entries before removing installed code", async () => {
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "teamlead-registry-forgery-"))
+  const global = path.join(tmp, "global")
+  const victim = path.join(tmp, "victim")
+  try {
+    const env = { ...process.env, OPENCODE_CONFIG_DIR: global }
+    lifecycle(tmp, false, "global", env)
+    await fs.mkdir(path.join(victim, ".opencode", ".teamlead"), { recursive: true })
+    await fs.writeFile(path.join(victim, ".opencode", "teamlead.json"), "keep")
+    await fs.mkdir(path.join(global, ".teamlead-projects"), { recursive: true })
+    await fs.writeFile(path.join(global, ".teamlead-projects", "forged.json"), JSON.stringify({ project: victim, installationId: "forged" }))
+    const result = entry(root, scopeArgs("global"), { env }, true)
+    assert.notEqual(result.status, 0)
+    await fs.access(path.join(global, "plugins", "teamlead.ts"))
+    assert.equal(await fs.readFile(path.join(victim, ".opencode", "teamlead.json"), "utf8"), "keep")
+  } finally { await fs.rm(tmp, { recursive: true, force: true }) }
+})
+
+test("global registration is concurrent, survives repeated installs and skips internal worktrees", async () => {
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "teamlead-concurrent-registry-"))
+  const global = path.join(tmp, "global")
+  try {
+    const env = { ...process.env, OPENCODE_CONFIG_DIR: global }
+    lifecycle(tmp, false, "global", env)
+    const projects = await Promise.all(Array.from({ length: 8 }, async (_, index) => {
+      const project = path.join(tmp, `project-${index}`)
+      await fs.mkdir(project)
+      return project
+    }))
+    const { registerGlobalProject } = await import("../payload/.opencode/teamlead/install-registry.ts")
+    await Promise.all(projects.map((project) => registerGlobalProject(project, global)))
+    const before = JSON.parse(await fs.readFile(path.join(global, ".teamlead-install.json"), "utf8")).installationId
+    lifecycle(tmp, false, "global", env)
+    assert.equal(JSON.parse(await fs.readFile(path.join(global, ".teamlead-install.json"), "utf8")).installationId, before)
+    await registerGlobalProject(path.join(projects[0], ".opencode", ".teamlead", "worktrees", "worker"), global)
+    assert.equal((await fs.readdir(path.join(global, ".teamlead-projects"))).length, 8)
+    lifecycle(tmp, true, "global", env)
+    for (const project of projects) await assert.rejects(fs.access(path.join(project, ".opencode")))
+  } finally { await fs.rm(tmp, { recursive: true, force: true }) }
+})
+
+test("installer rejects linked owned files before overwriting a file outside the target", async () => {
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "teamlead-owned-link-"))
+  try {
+    const outside = path.join(tmp, "outside.md")
+    const target = path.join(tmp, "project")
+    await fs.mkdir(path.join(target, ".opencode", "commands"), { recursive: true })
+    await fs.writeFile(outside, "keep")
+    try { await fs.symlink(outside, path.join(target, ".opencode", "commands", "lead.md")) }
+    catch (error) { if (process.platform === "win32" && error.code === "EPERM") return; throw error }
+    const result = entry(root, scopeArgs("local", target))
+    assert.notEqual(result.status, 0)
+    assert.equal(await fs.readFile(outside, "utf8"), "keep")
+    await assert.rejects(fs.access(path.join(target, ".opencode", "plugins", "teamlead.ts")))
+  } finally { await fs.rm(tmp, { recursive: true, force: true }) }
+})
+
 test("installer updates owned files and uninstall removes TeamLead while preserving user files", async () => {
   const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "teamlead-lifecycle-"))
   const oc = path.join(tmp, ".opencode")
@@ -189,10 +338,16 @@ test("installer updates owned files and uninstall removes TeamLead while preserv
     lifecycle(tmp)
     await fs.writeFile(path.join(oc, "teamlead", "language.json"), '{"language":"ru"}')
     await fs.writeFile(path.join(oc, "agents", "teamlead-obsolete.md"), "obsolete")
+    await fs.writeFile(path.join(oc, "commands", "lead-obsolete.md"), "obsolete")
+    const metadataFile = path.join(oc, ".teamlead-install.json")
+    const metadata = JSON.parse(await fs.readFile(metadataFile, "utf8"))
+    metadata.commands.push("lead-obsolete.md")
+    await fs.writeFile(metadataFile, JSON.stringify(metadata))
     await fs.writeFile(path.join(oc, "teamlead", "obsolete.ts"), "obsolete")
     await fs.writeFile(path.join(oc, "plugins", "teamlead.ts"), "old code")
     assert.match(lifecycle(tmp), /Updated|Обновл/)
     await assert.rejects(fs.access(path.join(oc, "agents", "teamlead-obsolete.md")))
+    await assert.rejects(fs.access(path.join(oc, "commands", "lead-obsolete.md")))
     await assert.rejects(fs.access(path.join(oc, "teamlead", "obsolete.ts")))
     assert.equal(JSON.parse(await fs.readFile(path.join(oc, "teamlead", "language.json"), "utf8")).language, "ru")
     assert.equal(await fs.readFile(path.join(oc, "plugins", "teamlead.ts"), "utf8"), await fs.readFile(path.join(root, "payload", ".opencode", "plugins", "teamlead.ts"), "utf8"))

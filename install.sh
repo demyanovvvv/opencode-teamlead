@@ -1,108 +1,52 @@
 #!/usr/bin/env bash
 set -euo pipefail
-
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SCOPE=""
-PROJECT=""
-LANGUAGE=""
-UNINSTALL=false
-LANGUAGE_EXPLICIT=false
+SCOPE=""; PROJECT=""; LANGUAGE=""; UNINSTALL=false; LANGUAGE_EXPLICIT=false
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --scope) SCOPE="${2:-}"; shift 2 ;;
-    --project) PROJECT="${2:-}"; shift 2 ;;
-    --language) LANGUAGE="${2:-}"; LANGUAGE_EXPLICIT=true; shift 2 ;;
+    --scope|--project|--language)
+      [[ $# -ge 2 && -n "$2" && "$2" != --* ]] || { echo "Missing value for $1" >&2; exit 2; }
+      case "$1" in --scope) SCOPE="$2" ;; --project) PROJECT="$2" ;; --language) LANGUAGE="$2"; LANGUAGE_EXPLICIT=true ;; esac
+      shift 2 ;;
     --uninstall) UNINSTALL=true; shift ;;
-    -h|--help) echo "Usage: ./install.sh [PROJECT] | --scope local --project PROJECT | --scope global [--language en|ru] [--uninstall]"; exit 0 ;;
+    -h|--help) echo "Usage: ./install.sh [PROJECT] [--scope local|global] [--project PROJECT] [--language en|ru] [--uninstall]"; exit 0 ;;
     -*) echo "Unknown option: $1" >&2; exit 2 ;;
     *) [[ -z "$PROJECT" ]] || { echo "Project specified twice" >&2; exit 2; }; PROJECT="$1"; shift ;;
   esac
 done
-[[ -z "$LANGUAGE" || "$LANGUAGE" == "en" || "$LANGUAGE" == "ru" ]] || { echo "--language must be en or ru" >&2; exit 2; }
-if [[ -z "$LANGUAGE" && -t 0 && -z "$SCOPE" && -z "$PROJECT" ]]; then
+[[ -z "$LANGUAGE" || "$LANGUAGE" == en || "$LANGUAGE" == ru ]] || { echo "--language must be en or ru" >&2; exit 2; }
+if [[ -z "$LANGUAGE" && -z "$SCOPE" && -z "$PROJECT" ]]; then
   printf 'Language / Язык:\n1) English\n2) Русский\nChoice [1]: '
-  read -r language_choice
-  [[ "$language_choice" == "2" ]] && LANGUAGE="ru" || LANGUAGE="en"
+  read -r choice || { echo "Specify --scope local|global for unattended use" >&2; exit 2; }
+  [[ "$choice" == 2 ]] && LANGUAGE=ru || LANGUAGE=en
 fi
 LANGUAGE="${LANGUAGE:-en}"
 if [[ -z "$SCOPE" ]]; then
-  if [[ -n "$PROJECT" ]]; then SCOPE="local"
-  elif [[ -t 0 ]]; then
-    if [[ "$LANGUAGE" == "ru" ]]; then printf 'Куда установить TeamLead?\n1) Локально в проект\n2) Глобально для пользователя\nВыбор [1]: '
-    else printf 'Where should TeamLead be installed?\n1) Locally in this project\n2) Globally for this user\nChoice [1]: '; fi
-    read -r choice
-    [[ "$choice" == "2" ]] && SCOPE="global" || SCOPE="local"
-  else echo "Specify --scope local|global" >&2; exit 2; fi
+  if [[ -n "$PROJECT" ]]; then SCOPE=local
+  else
+    if [[ "$UNINSTALL" == true ]]; then
+      [[ "$LANGUAGE" == ru ]] && printf 'Откуда удалить TeamLead?\n' || printf 'Where should TeamLead be uninstalled?\n'
+    else
+      [[ "$LANGUAGE" == ru ]] && printf 'Куда установить TeamLead?\n' || printf 'Where should TeamLead be installed?\n'
+    fi
+    [[ "$LANGUAGE" == ru ]] && printf '1) Локально в проекте\n2) Глобально для пользователя\nВыбор [1]: ' || printf '1) Locally in a project\n2) Globally for this user\nChoice [1]: '
+    read -r choice || { echo "Specify --scope local|global" >&2; exit 2; }
+    [[ -z "$choice" || "$choice" == 1 || "$choice" == 2 ]] || { echo "Invalid scope selection" >&2; exit 2; }
+    [[ "$choice" == 2 ]] && SCOPE=global || SCOPE=local
+  fi
 fi
-[[ "$SCOPE" == "local" || "$SCOPE" == "global" ]] || { echo "--scope must be local or global" >&2; exit 2; }
-if [[ "$SCOPE" == "local" ]]; then PROJECT="${PROJECT:-$PWD}"; else PROJECT="${PROJECT:-$PWD}"; fi
-SRC="$ROOT/payload/.opencode"
-if [[ "$SCOPE" == "global" ]]; then
-  if [[ -n "${OPENCODE_CONFIG_DIR:-}" ]]; then DST="$OPENCODE_CONFIG_DIR"; elif [[ -n "${XDG_CONFIG_HOME:-}" ]]; then DST="$XDG_CONFIG_HOME/opencode"; else DST="$HOME/.config/opencode"; fi
-else DST="$PROJECT/.opencode"; fi
-
-if [[ ! -d "$PROJECT" ]]; then
-  echo "Project directory does not exist: $PROJECT" >&2
-  exit 2
-fi
-
-UPDATING=false
-[[ ! -f "$DST/plugins/teamlead.ts" ]] || UPDATING=true
-if [[ "$UNINSTALL" == true ]]; then
-  node "$ROOT/scripts/merge-tui.mjs" "$DST" uninstall
-  echo "Removed OpenCode TeamLead from: $DST"
-  exit 0
-fi
-if [[ "$LANGUAGE_EXPLICIT" == false && -f "$DST/teamlead/language.json" ]]; then
-  LANGUAGE="$(node -e 'const fs=require("fs");console.log(JSON.parse(fs.readFileSync(process.argv[1],"utf8").replace(/^\uFEFF/,"")).language)' "$DST/teamlead/language.json")"
-fi
-node "$ROOT/scripts/merge-tui.mjs" "$DST" prepare
-mkdir -p "$DST/plugins" "$DST/teamlead" "$DST/agents" "$DST/commands"
-
-# Remove only command files owned by pre-v2 TeamLead releases. Do not touch unrelated user commands.
-legacy_commands=(
-  lead-review.md lead-dashboard.md lead-worker.md lead-dashboard-clear.md
-  lead-profiler.md lead-router.md lead-adaptive.md lead-runtime.md
-  lead-intelligence.md lead-execution.md lead-contracts.md lead-verify.md
-  tl-dashboard.md tl-worker.md tl-dashboard-clear.md tl-settings.md tl-models.md
-  tl-profiler.md tl-router.md tl-adaptive.md tl-runtime.md tl-intelligence.md
-  tl-execution.md tl-contracts.md tl-verify.md
-)
-for file in "${legacy_commands[@]}"; do rm -f "$DST/commands/$file"; done
-
-# Pre-v2 TeamLead used a plugin directory. It must not coexist with the single v2 entrypoint.
-rm -rf "$DST/plugins/teamlead"
-cp "$SRC/plugins/teamlead.ts" "$DST/plugins/teamlead.ts"
-rm -rf "$DST/teamlead"
-cp -R "$SRC/teamlead" "$DST/teamlead"
-if [[ "$LANGUAGE" == "ru" ]]; then
-  printf '{\n  "language": "ru"\n}\n' > "$DST/teamlead/language.json"
-fi
-cp "$SRC"/agents/teamlead-*.md "$DST/agents/"
-cp "$SRC"/commands/lead*.md "$DST/commands/"
-
-if [[ "$SCOPE" == "local" && ! -f "$DST/teamlead.json" ]]; then
-  cp "$SRC/teamlead.json" "$DST/teamlead.json"
-  if [[ "$LANGUAGE" == "ru" ]]; then node -e 'const fs=require("fs");const f=process.argv[1];const c=JSON.parse(fs.readFileSync(f,"utf8"));c.language="ru";fs.writeFileSync(f,JSON.stringify(c,null,2)+"\n")' "$DST/teamlead.json"; fi
-  echo "Created .opencode/teamlead.json"
+[[ "$SCOPE" == local || "$SCOPE" == global ]] || { echo "--scope must be local or global" >&2; exit 2; }
+if [[ "$SCOPE" == local ]]; then
+  if [[ -z "$PROJECT" ]]; then
+    [[ "$LANGUAGE" == ru ]] && printf 'Путь к проекту [%s]: ' "$PWD" || printf 'Project directory [%s]: ' "$PWD"
+    read -r PROJECT || { echo "Specify --project PROJECT" >&2; exit 2; }
+    PROJECT="${PROJECT:-$PWD}"
+  fi
+  [[ -d "$PROJECT" ]] || { echo "Project directory does not exist: $PROJECT" >&2; exit 2; }
+  DST="$PROJECT/.opencode"
 else
-  echo "Preserved existing .opencode/teamlead.json (v2 migrates compatible v1 settings at runtime)."
+  DST="${OPENCODE_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/opencode}"
 fi
-
-node "$ROOT/scripts/merge-tui.mjs" "$DST"
-
-merge_package_js='const fs=require("fs"); const f=process.argv[1]; let x={}; try{x=JSON.parse(fs.readFileSync(f,"utf8"))}catch{}; x.private=x.private!==false; x.dependencies=x.dependencies||{}; x.dependencies["@opencode-ai/plugin"]=">=1.18.30 <2.0.0"; fs.writeFileSync(f, JSON.stringify(x,null,2)+"\n");'
-if [[ ! -f "$DST/package.json" ]]; then
-  cp "$SRC/package.json" "$DST/package.json"
-elif command -v node >/dev/null 2>&1; then
-  node -e "$merge_package_js" "$DST/package.json"
-elif command -v bun >/dev/null 2>&1; then
-  bun -e "$merge_package_js" "$DST/package.json"
-else
-  echo "WARNING: Could not merge @opencode-ai/plugin into existing .opencode/package.json (node/bun not found)." >&2
-  echo '         Ensure it contains dependency "@opencode-ai/plugin": ">=1.18.30 <2.0.0" before restart.' >&2
-fi
-
-if [[ "$UPDATING" == true ]]; then ACTION="Updated"; else ACTION="Installed"; fi
-echo "$ACTION OpenCode TeamLead v2.1.2 ($SCOPE) into: $DST"
-echo "Restart OpenCode, then run: /lead-doctor"
+MODE=install
+[[ "$UNINSTALL" != true ]] || MODE=uninstall
+node --experimental-strip-types "$ROOT/scripts/install-lifecycle.mjs" "$MODE" "$DST" "$SCOPE" "$LANGUAGE" "$LANGUAGE_EXPLICIT"
