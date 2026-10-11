@@ -38,18 +38,12 @@ async function worktrees(directory) {
   const entries = await fs.readdir(base)
   for (const name of entries) await rejectLinkedPath(path.join(base, name))
   const project = path.dirname(directory)
-  const result = spawnSync("git", ["worktree", "list", "--porcelain", "-z"], { cwd: project, encoding: "utf8", shell: false, timeout: 120_000 })
+  const result = spawnSync("git", ["worktree", "list", "--porcelain"], { cwd: project, encoding: "utf8", shell: false, timeout: 120_000 })
   if (result.status !== 0) {
     for (const name of entries) if (await exists(path.join(base, name, ".git"))) throw new Error(`Cannot verify Git worktree: ${path.join(base, name)}`)
     return []
   }
-  const fields = result.stdout.split("\0")
-  const registered = []
-  for (let index = 0; index < fields.length; index++) {
-    const field = fields[index]
-    if (field === "worktree" && fields[index + 1]) registered.push(path.resolve(fields[++index]))
-    else if (field.startsWith("worktree ")) registered.push(path.resolve(field.slice(9)))
-  }
+  const registered = [...result.stdout.matchAll(/^worktree (.+)$/gm)].map((match) => path.resolve(match[1].trim()))
   const comparisonPath = (file) => process.platform === "win32" ? file.toLowerCase() : file
   const owned = registered.filter((file) => comparisonPath(file).startsWith(comparisonPath(path.resolve(base)) + path.sep))
   for (const file of owned) await rejectLinkedPath(file)
