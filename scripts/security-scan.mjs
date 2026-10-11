@@ -8,6 +8,10 @@ const targets = [
   path.join(root, "payload", ".opencode"),
   path.join(root, "install.sh"),
   path.join(root, "install.ps1"),
+  path.join(root, "uninstall.sh"),
+  path.join(root, "uninstall.ps1"),
+  path.join(root, "scripts", "install-lifecycle.mjs"),
+  path.join(root, "scripts", "merge-tui.mjs"),
 ]
 const forbidden = [
   { label: "shell:true", pattern: /\bshell\s*:\s*true\b/gi },

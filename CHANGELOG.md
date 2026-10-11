@@ -2,7 +2,13 @@
 
 ## Unreleased
 
+## 2.2.0 — 2026-10-11
+
 ### Installer
+- Added standalone bilingual `uninstall.ps1` / `uninstall.sh`, interactive scope/project selection and shared Node.js 22.6+ lifecycle logic.
+- Local-distribution updates read and record the package version, report version transitions and track obsolete owned commands.
+- Global startup records projects under an owner-token registry lock; global uninstall cleans registered project data while preserving independent local installations.
+- Uninstall unregisters owned Git worktrees and cleans installer-created dependency artifacts when no unrelated package requirements remain.
 - Repeated installation now reports updates, removes obsolete TeamLead agents, and preserves the installed UI language unless explicitly overridden.
 - Added `--uninstall` / `-Uninstall` for scoped removal of TeamLead files, settings, history, and TUI registration with restoration of recorded SDK dependencies.
 - Installer shared-path validation rejects symbolic links/junctions before changing files.
@@ -14,6 +20,11 @@
 
 ### Testing
 - Host smoke validation now documents its deterministic planning scope separately from model-backed mutating execution.
+
+### Documentation
+- Rewrote English and Russian README files as version-independent user guides.
+- Added the MIT license, security reporting guidance and GitHub issue/PR templates.
+- Synchronized installation, recovery, compatibility and release documentation.
 
 ## 2.1.2 — 2026-09-29
 

@@ -29,6 +29,8 @@ The server plugin remains compatible with the stable 1.x server surface. OpenCod
 
 ## Release validation policy
 
+Install/uninstall entrypoints require Node.js 22.6+ with native type stripping (passed explicitly by both shells). Bash and PowerShell share the same lifecycle implementation. Global configuration resolution respects `OPENCODE_CONFIG_DIR`, then `XDG_CONFIG_HOME`, then `~/.config/opencode`. Restart OpenCode after installing or updating; close it before removing the plugin.
+
 For future releases, the manual host workflow should test at least:
 
 1. minimum supported 1.x;

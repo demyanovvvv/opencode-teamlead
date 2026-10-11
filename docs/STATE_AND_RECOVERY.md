@@ -15,6 +15,8 @@ Lock files record a process ID, hostname, and owner token. Files older than ten 
 
 ## Integration recovery
 
+Global installation uses a separate `.teamlead-projects/` registry in the global OpenCode configuration directory. Each project is recorded in a SHA-256-named JSON entry with the installation UUID; the project contains a matching `.opencode/.teamlead/global-install.json` ownership marker. Registry mutations reload installation metadata under an exclusive owner-token lock and use atomic writes. Dead same-host owners older than ten minutes can be reclaimed; malformed or foreign-host locks fail closed. Internal TeamLead worktrees and independently installed local plugins are excluded. Global uninstall validates all registry entries and markers before cleaning project data, then marks the installation as uninstalling under the lock to prevent late registration. Runtime `state.json` continues to use `updateState` unchanged.
+
 For a mutating task, TeamLead:
 
 1. Collects and validates the worker patch.

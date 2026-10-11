@@ -7,7 +7,7 @@ skills provide additional checks for those areas.
 
 ## Setup
 
-Use Node.js 22 or newer:
+Use Node.js 22.6 or newer:
 
 ```bash
 npm ci
@@ -50,4 +50,4 @@ Document behavior changes in `CHANGELOG.md`. Update architecture, threat-model, 
 Do not claim that a test, review, release gate, or compatibility check passed
 without current command output or trusted tool evidence.
 
-Do not add or change a license header until the copyright owner has been confirmed.
+The project is licensed under [MIT](LICENSE). Preserve copyright notices; do not assign third-party contributions to a different owner without confirmation. Use the issue and pull request templates, and follow [SECURITY.md](SECURITY.md) for vulnerability reports.

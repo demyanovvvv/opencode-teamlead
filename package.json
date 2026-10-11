@@ -1,6 +1,7 @@
 {
   "name": "opencode-teamlead-source",
-  "version": "2.1.2",
+  "version": "2.2.0",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "description": "Production adaptive development accelerator for OpenCode 1.x",

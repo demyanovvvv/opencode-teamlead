@@ -2,6 +2,8 @@ import type { Plugin } from "@opencode-ai/plugin"
 import { tool } from "@opencode-ai/plugin"
 import fs from "node:fs/promises"
 import path from "node:path"
+import { fileURLToPath } from "node:url"
+import { registerGlobalProject } from "../teamlead/install-registry.ts"
 import { TeamLeadRuntime } from "../teamlead/runtime.ts"
 import { loadConfig, saveConfig } from "../teamlead/config.ts"
 import { guardTool, type SessionPolicy } from "../teamlead/security.ts"
@@ -39,6 +41,7 @@ function isBoundedReviewPath(value: string): boolean {
 
 export const TeamLeadPlugin: Plugin = async ({ client, directory, worktree }) => {
   const root = path.resolve(worktree || directory)
+  await registerGlobalProject(root, path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."))
   const policies = new Map<string, SessionPolicy>()
   const plans = new Map<string, PlanSubmission>()
   const reviews = new Map<string, ReviewSubmission>()

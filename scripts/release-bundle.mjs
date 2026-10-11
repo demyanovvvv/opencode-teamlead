@@ -66,7 +66,7 @@ try {
     for (let dir = parent; dir.startsWith(bundleRoot) && dir !== path.dirname(bundleRoot); dir = path.dirname(dir)) directories.add(dir)
     await fs.writeFile(target, contents.get(relative))
     await fs.utimes(target, 0, 0)
-    if (relative === "install.sh") await fs.chmod(target, 0o755)
+    if (relative === "install.sh" || relative === "uninstall.sh") await fs.chmod(target, 0o755)
   }
 
   // The in-archive manifest describes exactly the files shipped in the archive.
@@ -80,6 +80,7 @@ try {
   run("tar", ["-cf", rawTar, "--format=ustar", "-C", staging, name])
   const tar = await fs.readFile(rawTar)
   setTarEntryMode(tar, `${name}/install.sh`, 0o755)
+  setTarEntryMode(tar, `${name}/uninstall.sh`, 0o755)
   await fs.writeFile(artifact, gzipSync(tar, { mtime: 0 }))
   const digest = sha256(await fs.readFile(artifact))
   await fs.writeFile(checksum, `${digest}  ${path.basename(artifact)}\n`)

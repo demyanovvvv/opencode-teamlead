@@ -16,6 +16,8 @@ Execution mode is chosen by deterministic profiling first; a Lead call is paid f
 
 `plugins/teamlead.ts` is the only auto-loaded plugin entrypoint. It exposes typed TeamLead tools. `.opencode/commands/lead*.md` map slash commands to those tools. Internal modules under `.opencode/teamlead/` are regular modules, not plugins.
 
+`install-registry.ts` registers main projects at global plugin startup. The PowerShell/Bash installation and removal entrypoints share `scripts/install-lifecycle.mjs`; versioned metadata, JSONC merging, project ownership validation and Git worktree cleanup are deterministic. Global removal preserves independent local installations. Runtime execution state remains project-local.
+
 ## Model routing
 
 1. Build candidate set from role default/pool/current model.
