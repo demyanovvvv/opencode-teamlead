@@ -44,7 +44,8 @@ async function worktrees(directory) {
     return []
   }
   const registered = result.stdout.split("\0").filter((line) => line.startsWith("worktree ")).map((line) => path.resolve(line.slice(9)))
-  const owned = registered.filter((file) => file.startsWith(path.resolve(base) + path.sep))
+  const comparisonPath = (file) => process.platform === "win32" ? file.toLowerCase() : file
+  const owned = registered.filter((file) => comparisonPath(file).startsWith(comparisonPath(path.resolve(base)) + path.sep))
   for (const file of owned) await rejectLinkedPath(file)
   return owned.map((file) => ({ project, file }))
 }

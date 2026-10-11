@@ -235,12 +235,13 @@ test("uninstall removes registered Git worktrees and installer-created dependenc
     git("-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "--allow-empty", "-m", "initial")
     lifecycle(tmp)
     const oc = path.join(tmp, ".opencode")
+    // Git canonicalizes Windows drive letters; the caller's spelling can differ.
     const worktree = path.join(oc, ".teamlead", "worktrees", "orphan")
     await fs.mkdir(path.dirname(worktree), { recursive: true })
     git("worktree", "add", "--detach", worktree, "HEAD")
     await fs.mkdir(path.join(oc, "node_modules", "@opencode-ai", "plugin"), { recursive: true })
     await fs.writeFile(path.join(oc, "bun.lock"), "generated dependency lock")
-    lifecycle(tmp, true)
+    lifecycle(process.platform === "win32" ? tmp.replace(/^[a-z]:/i, (drive) => drive.toLowerCase()) : tmp, true)
     assert.equal(git("worktree", "list", "--porcelain").includes("orphan"), false)
     await assert.rejects(fs.access(oc))
   } finally { await fs.rm(tmp, { recursive: true, force: true }) }

@@ -78,7 +78,7 @@ b422fe5974e6e5dd478954e9557f0ffc2d0a73e9f3dd2e5a0bcf9269bd11dd46  ./payload/.ope
 beb8e2f49700c825b2552833f74b9b7ad28321dadbe7844470ce15a9b2044305  ./payload/.opencode/teamlead/types.ts
 70125c26755b66a5b444ca14641a4e29d0a4d9af3828ec3ca55019a38850f158  ./payload/.opencode/teamlead/verify.ts
 e63c9d16a135d2627a485523745188591a173a716d1c87582c42c58997d2c79e  ./scripts/host-smoke.mjs
-d1a6e1cd10e76f93f57926da9c0715d7ff3d94960d23c65e8589cca8d7cd5b4e  ./scripts/install-lifecycle.mjs
+dcfc9c1df90a21a6d7b2a74ef8d8bc1079e1f84b2ca7dad6bca6ed89047da151  ./scripts/install-lifecycle.mjs
 11d42fa6135e16edade510bf63e06b25abe6ea89eaf8cbf0c1fc42f43c388de1  ./scripts/manifest-lib.mjs
 2bfc6aba35a73f00c8e2c0ab0e4c390d26c8aee23bc7ebdb608b81c72a51afbc  ./scripts/manifest.mjs
 44c5c7ef0c9fe628e8318bcefb6d492aad34d6158c3905a785ec6e6a28d2177f  ./scripts/merge-tui.mjs
@@ -91,7 +91,7 @@ ed15ac23c57ef9bfa11d43f4735d5df27c678c76684623afd309b8cd3ecd27e1  ./scripts/payl
 2319c0569a093d5fbb505c2cc2e60fe306b7099ece2db9d6e633789f0df8aca5  ./tests/core.test.mjs
 4446f5691c0ebb072a510b24b96830097f3ae529f1cd0e7c41a1a13990907c83  ./tests/git.test.mjs
 ce08ea4d3ac8cca87b0b43395febdf222baf44f42b5ef5027ed4bef6db7b459c  ./tests/host-smoke.test.mjs
-52ce69cf6268d801ef996f408413d03cb94bc354c465269b92d9d1e49850db5e  ./tests/installer.test.mjs
+22592ecd35a67d57e0ec068a8874fe2a6973ef8d0494e8a35507e56ebcca7e5b  ./tests/installer.test.mjs
 f5f1db2c8197ba73929ab91485aa429eefd3c9a7b941e999b9230aee4b8d3fc9  ./tests/presentation.test.mjs
 652b2b3ec3f78df5dc8a5c8ca4dbb65c6e1a0770bafaf5406034dde6f9c2b319  ./tests/process.test.mjs
 ca04dba61806acdf4e6891a24ea841d31f6ea1c185fa4a916a1b56b678f52a1a  ./tests/release.test.mjs
