@@ -7,6 +7,7 @@ import { registerGlobalProject } from "../teamlead/install-registry.ts"
 import { TeamLeadRuntime } from "../teamlead/runtime.ts"
 import { loadConfig, saveConfig } from "../teamlead/config.ts"
 import { guardTool, type SessionPolicy } from "../teamlead/security.ts"
+import { readOpenCodeHealth } from "../teamlead/doctor.ts"
 import type { PlanSubmission, ReviewSubmission, TaskSpec, WorkerRole, ModelRole } from "../teamlead/types.ts"
 
 const z = tool.schema
@@ -39,7 +40,7 @@ function isBoundedReviewPath(value: string): boolean {
   return normalized !== "."
 }
 
-export const TeamLeadPlugin: Plugin = async ({ client, directory, worktree }) => {
+export const TeamLeadPlugin: Plugin = async ({ client, directory, worktree, serverUrl }) => {
   const root = path.resolve(worktree || directory)
   await registerGlobalProject(root, path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."))
   const policies = new Map<string, SessionPolicy>()
@@ -184,9 +185,7 @@ export const TeamLeadPlugin: Plugin = async ({ client, directory, worktree }) =>
         args: {},
         async execute() {
           let health: any = { healthy: true, version: "unknown" }
-          if (typeof client?.global?.health === "function") {
-            try { health = sessionData(await client.global.health()) } catch (error) { health = { healthy: false, version: "unknown", error: String(error) } }
-          }
+          try { health = await readOpenCodeHealth(client, serverUrl) } catch (error) { health = { healthy: false, version: "unknown", error: String(error) } }
           const capabilities = {
             sessionCreate: typeof client?.session?.create === "function",
             sessionPrompt: typeof client?.session?.prompt === "function",
@@ -222,8 +221,3 @@ export const TeamLeadPlugin: Plugin = async ({ client, directory, worktree }) =>
 }
 
 export default TeamLeadPlugin
-
-function sessionData(response: any): any {
-  if (response?.error) throw new Error(typeof response.error === "string" ? response.error : JSON.stringify(response.error))
-  return response?.data ?? response
-}

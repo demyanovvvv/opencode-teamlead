@@ -4,7 +4,7 @@
 
 TeamLead v2 targets the OpenCode **1.x** public plugin/SDK family with a tested compatibility baseline of **1.18.30** and a package range `<2.0.0`.
 
-It does not branch on an exact patch version for feature behavior. `/lead-doctor` checks the public SDK capabilities required by the runtime and reports missing capabilities.
+It does not branch on an exact patch version for feature behavior. `/lead-doctor` checks the public SDK capabilities required by the runtime and reports missing capabilities. It reads the connected server version from the SDK when available and falls back to the plugin server endpoint, preserving custom build suffixes such as `1.18.35+patchline.1.2.1`.
 
 Required capabilities:
 
