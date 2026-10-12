@@ -1,4 +1,4 @@
-# Release validation — 2.2.0
+# Release validation — 2.2.1
 
 ## Qualification scope
 
@@ -14,6 +14,7 @@ npm run payload:check
 npm run security:scan
 npm run manifest:check
 npm run release:bundle
+npm run e2e:host
 npm run e2e:host:plan
 git diff --check
 ```
@@ -34,6 +35,6 @@ The manifest is generated with `npm run manifest:write` only after release files
 
 ## Evidence and limits
 
-The local required gates and both shell lifecycle suites passed on 2026-10-11 before release preparation. The release commit is re-qualified with the same gates; authoritative output is retained in the GitHub Actions CI and Release runs associated with the release tag.
+The local required gates and both shell lifecycle suites passed on 2026-10-12 before release preparation. The release commit is re-qualified with the same gates; authoritative output is retained in the GitHub Actions CI and Release runs associated with the release tag.
 
-Host smoke covers installed plugin loading and deterministic `/lead-plan` behavior against the available OpenCode host. Mock runtime tests cover mutating worker execution, verification and integration. A live model-backed mutating `/lead` run and Windows PowerShell 5.1 are not qualified by these checks. See [TESTING.md](docs/TESTING.md) and [COMPATIBILITY.md](docs/COMPATIBILITY.md).
+Host smoke covers installed plugin loading, `/lead-doctor` and deterministic `/lead-plan` behavior against the available OpenCode host. The local doctor smoke reported the connected custom server version `1.18.35+patchline.1.3.0`, a supported family and all required capabilities and files. Mock runtime tests cover mutating worker execution, verification and integration. A live model-backed mutating `/lead` run and Windows PowerShell 5.1 are not qualified by these checks. See [TESTING.md](docs/TESTING.md) and [COMPATIBILITY.md](docs/COMPATIBILITY.md).

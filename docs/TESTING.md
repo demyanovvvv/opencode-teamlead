@@ -9,6 +9,7 @@ npm run payload:check
 npm run security:scan
 npm run manifest:check
 npm run release:bundle
+npm run e2e:host
 npm run e2e:host:plan
 ```
 
@@ -27,6 +28,7 @@ The release suite covers:
 - Linux/macOS installer upgrade preservation;
 - full runtime worker → worktree → patch → verification → integration → structured review flow with a mock OpenCode SDK client;
 - host compatibility smoke for plugin loading, commands, tools, and typed planning; mutating host execution requires a real model/session fixture and is not part of the deterministic host smoke;
+- doctor version detection through the SDK or connected server endpoint, including preservation of custom build suffixes;
 - failing trusted verification leaves the primary checkout unchanged;
 - strong verified Direct work can skip an unnecessary LLM Reviewer;
 - Team mode consumes a typed Lead DAG handoff;

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 2.2.1 — 2026-10-12
+
+### Compatibility
+- Fixed `/lead-doctor` version detection for OpenCode SDKs without `global.health()`, including custom server build suffixes.
+
 ## 2.2.0 — 2026-10-11
 
 ### Installer
